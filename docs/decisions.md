@@ -13,3 +13,20 @@
 - Pro ověření využit dočasný Playwright mimo projekt a již instalovaný Chrome. Testovací framework se nepřidává do závislostí statického základu.
 
 - `next.config.ts` nastavuje `agentRules: false` podle lokální dokumentace Next 16.4.6, aby `next dev` nepřidával generované instrukce do původního AGENTS.md. Blok vytvořený při ověření odstraněn; vlastní obsah zachován.
+
+## 16. 11. 2026 — Etapa 2: bezpečnostní hranice před implementací
+
+- SQL v `supabase/migrations` je jediný autoritativní migrační řetězec (Supabase CLI, lokálně). Drizzle poskytuje typovaný model a dotazy, nepoužívá druhý migrační ledger ani schema push. Migrace zahrnují role, granty, funkce a RLS.
+- Runtime `craftbook_runtime`: LOGIN, NOINHERIT, NOSUPERUSER, NOBYPASSRLS, NOCREATEROLE, NOCREATEDB, bez členství v jiných rolích; max. 5 spojení. Vlastníkem tabulek je migrační role. Runtime pouze čte vlastní UserAccount a čte/upravuje běžná pole vlastního profilu.
+- UserAccount SELECT RLS porovnává pouze ověřené ID s transakčním `app.user_id`, nezávisí na profilu ani na vlastní politice. Tím nevzniká rekurze. Běžný přístup vyžaduje profil a aktivní účet bez pending/expirace/povinné změny. Profilové RLS navíc kontrolují aktivní účet a platnou relaci.
+- Ověření identity pomocí Supabase getUser a ověřených claims → transakce → `set_config(..., true)` pro user ID a session ID → stav účtu/relace → dotazy. Žádné ID z klientského payloadu není autoritou. Kontext po COMMIT i ROLLBACK zmizí.
+- `sessions_valid_after`: relace musí mít původní `auth.sessions.created_at >= sessions_valid_after`. Identita a session_id jsou z ověřeného tokenu; existence relace a vazba user ID se kontrolují v DB. Refresh zachovává session_id i created_at a neobchází zneplatnění. Nové přihlášení vytvoří novou relaci. Zrušená relace bez řádku nemá přístup ani se stále kryptograficky platným JWT.
+- Úzká SECURITY DEFINER funkce bez argumentů vrací pouze čas založení vlastní aktuální relace (ne cizí údaje), má `search_path = ''`, plně kvalifikované objekty a EXECUTE pouze runtime. Vlastník se využívá jen uvnitř této funkce pro čtení auth.sessions, nikdy jako běžné aplikační spojení.
+- Mutace přes Route Handlers s přesnou kontrolou Origin proti APP_URL, JSON vstupy a serverovou validací. Osobní odpovědi no-store; každá stránka i API ověřuje účet samostatně. Proxy obnovuje cookies, není jedinou autorizační hranicí.
+- Lokální fixtures mohou vytvářet aktivní účty pouze na loopback Auth/DB; běžný provisioning konkrétního Auth ID vytváří pending_password + expiraci 48 h. Existující účty ani hesla se nepřepisují. Plný ops lifecycle a změna hesla zůstávají etapě 3.
+
+- Ověřené lokální prostředí: Docker Engine 29.9.3 běží, Supabase CLI 3.2.0 (v3 `migration up` je lokální bez dřívějšího `--local`), PostgreSQL 17. Přidané knihovny: @supabase/ssr 0.12.7, supabase-js 2.119.0, Drizzle 0.45.4, pg 8.23.1, Zod 4.6.7; verze uzamčené lockfile. Next/React/ESLint beze změny.
+- Runtime konfigurace a lokální provozní konfigurace jsou v oddělených ignorovaných souborech. Lokální wrapper potlačuje výstup CLI obsahující klíče. Heslo fixture účtu zadává uživatel interaktivně se skrytým vstupem, testy generují hesla jen v paměti.
+- Přihlašování používá pevné interní cíle `/` a `/account-blocked`; uživatelské návratové URL se nepřijímá. Logout provede plnou navigaci, která zahodí předchozí paměťovou Router Cache. Cookies HttpOnly, SameSite=Lax, na HTTPS Secure; klient nepotřebuje přímý Supabase klient.
+- Testy používají skutečné lokální Auth a DB se samostatnými náhodnými účty. RLS kontroly se provádějí připojením craftbook_runtime, včetně stejného fyzického spojení a rollbacku. Testovací úklid se omezuje na ID vytvořená daným během; žádný reset databáze.
+- Oficiální podklady ověřené při realizaci: [Supabase SSR](https://supabase.com/docs/guides/auth/server-side/creating-a-client), [relace a session_id](https://supabase.com/docs/guides/auth/sessions), [CLI konfigurace](https://supabase.com/docs/guides/local-development/cli/config), [Drizzle transakce](https://orm.drizzle.team/docs/transactions) a lokální Next 16.4.6 dokumentace.

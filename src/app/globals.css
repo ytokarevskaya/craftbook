@@ -146,3 +146,9 @@ body:has(.mobile-drawer[open]) { overflow: hidden; }
   footer { padding: 18px 20px; }
   .login-panel { padding: 24px; }
 }
+.form-error { color: #9a3029; background: #fff3f0; padding: 12px; border-radius: 6px; font-size: 14px; overflow-wrap: anywhere; }
+.password-panel { margin-top: 24px; }
+.switch:checked { background: var(--primary); border-color: var(--primary); }
+.switch:checked::before { transform: translateX(18px); }
+.account-preview span { overflow-wrap: anywhere; min-width: 0; }
+[role=status]:focus, [role=alert]:focus { outline: 2px solid var(--primary); outline-offset: 3px; }

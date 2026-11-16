@@ -25,3 +25,9 @@ Nastavení: jméno, e-mail pouze pro čtení, vlastní dílna (výchozí vypnuto
 - Po dokončení bez vzoru: dobrovolný editovatelný formulář nového postupu, idempotentní uložení. Vlastní množství = odběr minus použitelná vratka s vysvětlením rozpisu, ne automaticky čistá hmotnost šperku. Školní neznámé množství zůstává prázdné. Nepřenášet checkboxy, fotografie, ceny ani rezervace.
 - Null školní cena není nula ani chyba dokončeného výrobku. Zásoby, rezervace a spotřeba zůstávají oddělené.
 - Oblíbené, vybavení, kolekce, velikosti, historie vzorů a AI mimo MVP.
+
+## Aktualizace etapy 2 — 16. 11. 2026
+
+Přihlášení a profil jsou skutečné formuláře s popisky, pending stavem, serverovou validací a čitelnou chybou. Po chybě/uložení se fokus přesune na zprávu. Po přihlášení se nezobrazuje označení náhledu bez identity. Uživatelské jméno vychází ze skutečného profilu, prázdné jméno má neutrální „Můj účet“.
+
+Materiály se zobrazují jen při vlastní dílně; přímé URL ověřuje server. Nastavení ukládá jméno a dílnu, e-mail je pouze pro čtení. Změna hesla zůstává neaktivní s vysvětlením etapy 3. Blokovaný nebo neúplný účet má samostatnou obrazovku bez soukromého obsahu a možnost odhlášení. Vizuální tokeny, desktop sidebar a klávesnicový mobilní drawer z etapy 1 jsou zachované.

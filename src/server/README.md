@@ -1,3 +1,3 @@
 # Serverová vrstva
-V etapě 1 nejsou aplikační služby ani připojení k databázi. Health handler v `src/app/api/health` potvrzuje pouze běh procesu.
-Od etapy 2 sem patří serverová infrastruktura identity a transakčního kontextu. Serverové moduly označit `server-only`; nevytvářet fallback backend. Doménová pravidla patří do služeb příslušného modulu.
+
+Server-only konfigurace, pg pool (max 5), Supabase SSR cookies, přístup k účtu a HTTP ochrany. Web nikdy nečte `.env.ops.local`, nepoužívá privilegovaný Auth klíč ani migrační DB roli. Identitní transakce a profilové operace jsou v `src/modules/identity/service.ts`.

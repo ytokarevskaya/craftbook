@@ -10,19 +10,37 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "local:start": "node scripts/local-stack.mjs start",
+    "local:stop": "node scripts/local-stack.mjs stop",
+    "db:migrate": "node scripts/local-stack.mjs migrate",
+    "local:env": "tsx scripts/local-env.ts",
+    "local:account": "tsx scripts/local-account.ts",
+    "local:provision": "tsx scripts/local-provision.ts",
+    "test:integration": "node --conditions=react-server --import tsx --test tests/integration/*.test.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.119.0",
+    "drizzle-orm": "0.45.4",
     "next": "16.4.6",
+    "pg": "8.23.1",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "server-only": "0.0.1",
+    "zod": "4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "1.65.1",
     "@types/node": "^24.0.0",
+    "@types/pg": "8.23.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.6",
+    "supabase": "3.2.0",
+    "tsx": "4.23.15",
     "typescript": "5.9.3"
   }
 }
