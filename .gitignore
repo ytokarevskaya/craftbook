@@ -16,3 +16,7 @@ test-results/
 *.dump
 
 /.cloud/
+
+# Projektové podklady zůstávají pouze lokálně.
+/.docs/
+/docs/

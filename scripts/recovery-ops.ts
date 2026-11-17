@@ -38,4 +38,4 @@ async function assertMarkerOrStart(workdir:string) {
  try {await assertRecoveryEnvironment(workdir,undefined,true);}
  catch {const e=await startEnvironment(workdir);await e.migration.end();await e.runtime.end();}
 }
-void main().catch(()=>{console.error('Operace nedokončena. Ověřte lokální cíl, úplnost zálohy a návod docs/backup-and-restore.md. Selhaný cíl nepřepisujte; použijte nový izolovaný cíl.');process.exitCode=1;});
+void main().catch(()=>{console.error('Operace nedokončena. Ověřte lokální cíl, úplnost zálohy a návod .docs/backup-and-restore.md. Selhaný cíl nepřepisujte; použijte nový izolovaný cíl.');process.exitCode=1;});

@@ -1,5 +1,8 @@
 # Craftbook
 
+Podrobné projektové podklady jsou pouze lokálně v ignorované složce `.docs/`.
+Odkazy do této složky fungují v pracovním adresáři; nový Git checkout je neobsahuje.
+
 Jedna kniha vládne všem.
 
 Soukromá aplikace pro studenty zlatnictví a vlastní dílnu. Po etapě 9 funguje školní i vlastní výrobní cyklus: plány, rezervace, deník a fotografie, skutečná spotřeba, vratky, odpad, materiálový náklad a auditovatelné opravy. Zachované jsou dokumenty, WYSIWYG, soukromé přílohy a provozní správa účtů. Nastavení nabízí export JSON/CSV i souborů; samostatné provozní nástroje mají skutečně ověřenou izolovanou obnovu.
@@ -42,7 +45,7 @@ Existující konfiguraci skript `local:env` odmítne přepsat. Pro běžný dal�
 - `npm run ops:deactivate`: blokace účtu i Auth, zrušení relací, zachování dat.
 - `npm run ops:status` a `npm run ops:resume`: dohledání a obnova přerušených operací.
 
-Podrobný postup, Dashboard a náprava selhání: [provozní návod](docs/account-operations.md). Příkazy zobrazují cílové prostředí a účet, vyžadují potvrzení a odmítají vzdálené cíle. Pro již připravené prostředí neopakujte `local:env`.
+Podrobný postup, Dashboard a náprava selhání: [provozní návod](.docs/account-operations.md). Příkazy zobrazují cílové prostředí a účet, vyžadují potvrzení a odmítají vzdálené cíle. Pro již připravené prostředí neopakujte `local:env`.
 
 `npm run local:account` zůstává výhradně vývojovou fixture: vytváří aktivní lokální účet bez povinné změny. Pro ověření skutečného prvního přihlášení použijte `ops:create`.
 
@@ -54,7 +57,7 @@ V Dokumentech lze vytvořit poznámku s formátováním a obrázky, nahrát PDF/
 
 Obrázky se optimalizují na nejvýše 2000 px / 5 MiB, přílohy mají limit 10 MiB. Údržba: `npm run files:cleanup` je dry-run, `npm run files:cleanup -- --apply` uklidí nejvýše 50 starých souborů bez reference. Fyzické mazání je odložené nejméně 24 hodin a respektuje platnost upload oprávnění.
 
-Podrobnosti, konfigurace, lifecycle a ruční scénář: [Soubory a údržba](docs/files-and-maintenance.md). Validace souborů není antivirus; HEIC, SVG a HTML nejsou podporované.
+Podrobnosti, konfigurace, lifecycle a ruční scénář: [Soubory a údržba](.docs/files-and-maintenance.md). Validace souborů není antivirus; HEIC, SVG a HTML nejsou podporované.
 
 ## Běžný start a zastavení
 
@@ -78,7 +81,7 @@ Jedinou autoritou je SQL řetězec `supabase/migrations`, aplikovaný Supabase C
 
 Schéma `app` není v Data API. Role `craftbook_runtime` není vlastník, superuser, BYPASSRLS ani člen jiné role. Může číst vlastní stav účtu, upravovat jen `display_name`/`has_workshop` vlastního profilu a pracovat s vlastními dokumenty a assety pod RLS. Runtime nemá přímé zápisy do `UserAccount` ani evidence operací. Vlastní změna hesla používá úzké SECURITY DEFINER funkce svázané s ověřeným účtem, původní relací a aktuální operací.
 
-Každá operace ověří Auth identitu i token, vytvoří transakci a nastaví lokální user/session kontext. RLS i služba kontrolují stav účtu a původní relaci; po COMMIT i ROLLBACK kontext zmizí. `sessions_valid_after` se porovnává s původním `auth.sessions.created_at`, nikoli s novým JWT `iat`. Refresh původní relaci neomladí. Úzká SECURITY DEFINER funkce zpřístupňuje jen čas vlastní aktuální relace, nemá uživatelské argumenty a používá prázdný search_path. Podrobnosti v [docs/decisions.md](docs/decisions.md).
+Každá operace ověří Auth identitu i token, vytvoří transakci a nastaví lokální user/session kontext. RLS i služba kontrolují stav účtu a původní relaci; po COMMIT i ROLLBACK kontext zmizí. `sessions_valid_after` se porovnává s původním `auth.sessions.created_at`, nikoli s novým JWT `iat`. Refresh původní relaci neomladí. Úzká SECURITY DEFINER funkce zpřístupňuje jen čas vlastní aktuální relace, nemá uživatelské argumenty a používá prázdný search_path. Podrobnosti v [.docs/decisions.md](.docs/decisions.md).
 
 Cookies jsou HttpOnly, SameSite=Lax a na HTTPS Secure. Proxy obnovuje relaci, ale každá privátní stránka a API kontrolují přístup samostatně. Mutace vyžadují přesný Origin, profil přijímá striktní JSON bez cizího ID či chráněných příznaků. Osobní odpovědi nejsou sdíleně cachované. Chybějící účet/profil, inactive/disabled/pending_password, povinná změna, expirace a neplatná či zneplatněná relace jsou odmítnuté.
 
@@ -143,7 +146,7 @@ Ruční kontrolní scénář:
 
 Prázdná cena je neznámá, nula je známé nulové ocenění. Smíšená zásoba ukazuje známou hodnotu jako neúplnou; odpis převádí známou a neznámou část poměrně. Nový příjem staré neznámé ceny nedopočítává. Částky jsou CZK, bez DPH a automatického rozpočítání dopravy. Po zaúčtování je nákup neměnný; opravy množství se evidují inventurou, nikoli úpravou historie. Poznámka a přílohy nákupu jsou v této etapě také pouze pro čtení.
 
-Přesný model a zaokrouhlování jsou v `docs/decisions.md`. Diagnostika přihlášeného vlastníka s dílnou: `GET /api/inventory/reconcile`, očekávané `{"issues":[]}`; nic neopravuje. Etapy 7–8 níže doplňují rezervace a dokončený vlastní cyklus. Školní výrobky sklad nemění.
+Přesný model a zaokrouhlování jsou v `.docs/decisions.md`. Diagnostika přihlášeného vlastníka s dílnou: `GET /api/inventory/reconcile`, očekávané `{"issues":[]}`; nic neopravuje. Etapy 7–8 níže doplňují rezervace a dokončený vlastní cyklus. Školní výrobky sklad nemění.
 
 ## Etapa 7 — rezervace a cenové části
 
@@ -166,7 +169,7 @@ Test vytvoří pouze vlastní náhodné účty a data, zavolá interní služby 
 
 Kontrolní příklad v testu: 10 g / 300 Kč → rezervace 5 g / 150 Kč → nákup 5 g / 200 Kč → volných 10 g / 350 Kč → navýšení rezervace o 2 g / 70 Kč → rezervováno 7 g / 220 Kč, volných 8 g / 280 Kč → uvolnění vrátí celkem 15 g / 500 Kč. Nový příjem nepřecení staré části. Snížení vrací nejnovější cenové části jako první; plné uvolnění vrací i poslední přesné účetní zbytky.
 
-`GET /api/inventory/reconcile` nyní porovnává všechny složky obou fondů s ledgerem a rezervovaný fond také se zbývajícími cenovými částmi; nic neopravuje. Vypnutí dílny rezervace nesmaže. Archivovaná karta dovoluje uvolnění, ale další čerpání vyžaduje její obnovu. Detailní invarianty a pořadí zámků jsou v `docs/decisions.md`.
+`GET /api/inventory/reconcile` nyní porovnává všechny složky obou fondů s ledgerem a rezervovaný fond také se zbývajícími cenovými částmi; nic neopravuje. Vypnutí dílny rezervace nesmaže. Archivovaná karta dovoluje uvolnění, ale další čerpání vyžaduje její obnovu. Detailní invarianty a pořadí zámků jsou v `.docs/decisions.md`.
 
 Etapa 8 připojila mapovací a rezervační komponenty na autorizované webové mutace současně s úplným dokončením a vypořádáním. Bez dílny zůstává own zakázané na serveru.
 
@@ -232,7 +235,7 @@ npm run build
 npm run test:e2e
 ```
 
-Podrobný model: [Skladový model](docs/inventory-model.md) a [rozhodnutí](docs/decisions.md).
+Podrobný model: [Skladový model](.docs/inventory-model.md) a [rozhodnutí](.docs/decisions.md).
 Testy používají skutečný lokální Auth/PostgreSQL/Storage a uklízejí jen svá UUID.
 Bez push, cloudu a nasazení. Etapa 9 nebyla zahájena.
 
@@ -241,7 +244,7 @@ Bez push, cloudu a nasazení. Etapa 9 nebyla zahájena.
 V **Nastavení → Export vlastních dat** lze stáhnout JSON, CSV, manifest a všechny
 vlastní přílohy/fotografie. Plný ZIP má limit příloh 32 MiB; větší objem se
 stahuje jako záznamy a samostatné soubory. Historická vlastní skladová data jsou
-exportovatelná i po vypnutí dílny. [Postup a hranice exportu](docs/export.md).
+exportovatelná i po vypnutí dílny. [Postup a hranice exportu](.docs/export.md).
 
 Provozní záloha je samostatný lokální nástroj, vyžaduje okno bez zápisů a úklidu:
 
@@ -253,7 +256,7 @@ npm run ops:restore -- --backup /absolutni/chranena/cesta/novy-backup
 
 Restore přijímá jen nový označený izolovaný cíl; nikdy běžný lokální ani cloudový
 projekt. Účty po obnově vyžadují řízený reset, deaktivace zůstává zachovaná.
-[Úplný návod včetně bezpečného retry](docs/backup-and-restore.md).
+[Úplný návod včetně bezpečného retry](.docs/backup-and-restore.md).
 
 Závěrečné místní ověření (Docker, Node 24, lokální Supabase a Chrome):
 
@@ -270,7 +273,7 @@ npm run test:recovery
 Recovery test si založí dva vlastní lokální projekty s odlišnými volumes a porty
 55321/55322 a 56321/56322, ověří skutečný dump, soubory, Auth reset, RLS, ledger
 i obnovený web na 1440 a 375 px a zastaví pouze své projekty. Nespoléhá jen
-na vytvoření souboru zálohy. [Akceptační mapa MVP](docs/mvp-acceptance.md).
+na vytvoření souboru zálohy. [Akceptační mapa MVP](.docs/mvp-acceptance.md).
 
 ### Etapa 10 — uzavřený cloudový pilot
 
@@ -281,7 +284,7 @@ přirozené uspání/probuzení a izolovaná obnova pilotní zálohy prošly. C�
 oddělenou ignorovanou `.env.ops.cloud.local`, ověřované TLS/CA, omezenou
 runtime roli a kontrolu přesných cílů. Lokální konfigurace zůstává lokální.
 
-[Nasazení, provozní příkazy a skutečné výsledky](docs/deployment.md).
+[Nasazení, provozní příkazy a skutečné výsledky](.docs/deployment.md).
 Nejprve `npm run cloud:setup`, případně `cloud:cert`, pak `cloud:inspect`.
 Hesla/klíče zadávejte pouze lokálně skrytě, neposílejte je do chatu ani Git.
 První účet vyžaduje osobní přihlášení a změnu hesla; dočasné přístupy jsou

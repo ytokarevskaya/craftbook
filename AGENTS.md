@@ -4,11 +4,11 @@ Slogan: Jedna kniha vládne všem.
 Komunikuj s uživatelkou česky. UI a uživatelské chyby piš česky; identifikátory v kódu anglicky.
 Podklady a rozsah práce
 Před změnou relevantního modulu přečti:
-- docs/product-spec.md — produktové chování; výchozí schválená revize 0.3.
-- docs/technical-spec.md — architektura a model; výchozí schválená revize 0.2.
-- docs/implementation-plan.md — etapy; výchozí revize 1.1.
-- docs/progress.md a docs/decisions.md, pokud existují.
-- docs/ui-guidelines.md, pokud se mění rozhraní.
+- .docs/product-spec.md — produktové chování; výchozí schválená revize 0.3.
+- .docs/technical-spec.md — architektura a model; výchozí schválená revize 0.2.
+- .docs/implementation-plan.md — etapy; výchozí revize 1.1.
+- .docs/progress.md a .docs/decisions.md, pokud existují.
+- .docs/ui-guidelines.md, pokud se mění rozhraní.
 Novější výslovné rozhodnutí uživatelky má přednost před starším návrhem. Čísla revizí výše slouží k odhalení starých podkladů, nebrání pozdějším schváleným aktualizacím. Tento soubor shrnuje zásady; podrobná pravidla a vzorce patří do specifikací.
 
 Implementuj pouze aktuálně zadanou etapu. Po jejím dokončení nepokračuj automaticky další etapou. Pokud etapa není určena, zjisti ji z aktuálního zadání a progress; při nejasnosti se zeptej, nezačínej celé MVP.
@@ -85,6 +85,6 @@ Ověření a předání
 - Bezpečnost ověř minimálně se dvěma uživateli, včetně přímých požadavků obcházejících UI.
 - Změny UI ověř na desktopu a šířce 375 px, pokud je dostupný prohlížeč.
 - Nikdy netvrď, že test prošel, pokud se nespustil. Uveď chybějící nástroj, přístup nebo konfiguraci.
-- Po úpravě aktualizuj docs/progress.md: etapa, dokončené body, kontroly, blokátory a další krok. Významné technické rozhodnutí patří do docs/decisions.md.
+- Po úpravě aktualizuj .docs/progress.md: etapa, dokončené body, kontroly, blokátory a další krok. Významné technické rozhodnutí patří do .docs/decisions.md.
 - Finální report česky: co se změnilo, jak to spustit a vyzkoušet, výsledky kontrol, omezení. Neuváděj tajné hodnoty.
 - Po dokončení zadané etapy se zastav. Otevřené problémy nezakrývej implementací dalších etap.
