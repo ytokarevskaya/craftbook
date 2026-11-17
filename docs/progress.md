@@ -108,3 +108,38 @@ Etapa 1 končí zde. Další je samostatně zadaná etapa 2 (skutečná identita
 - Testy uklidily pouze své náhodné identity; ruční účty zůstaly zachované. Lokální Supabase běží, testovací web je ukončený.
 - Vyzkoušení: `npm run local:start`, `npm run db:migrate`, `npm run ops:create`, `npm run dev`; otevřít http://localhost:3000/login a projít povinnou změnou. Existující konfiguraci nepřegenerovávat. Reset: `npm run ops:reset`; deaktivace: `npm run ops:deactivate`.
 - Etapa 3 dokončena. Další krok je až samostatně zadaná etapa 4; dokumenty, sklad ani další moduly nebyly zahájeny.
+
+## Etapa 4 — dokončeno (17. 11. 2026)
+
+### Hotovo
+
+- Dokumenty: vlastní seznam, hledání podle názvu, serverové stránkování se stabilním pořadím updated_at/id, prázdný stav, nulový výsledek hledání a samostatný chybový stav. Přehled zobrazuje skutečné poslední dokumenty.
+- Poznámky: otevřený Tiptap 3, základní WYSIWYG formátování, obrázky v obsahu přes Asset ID, explicitní Uložit, ochrana neuložených změn, zachování rozepsaného obsahu při chybě a konflikt row_version s možností načtení aktuální verze. Bez localStorage, HTML/Markdown zdroje nebo autosave.
+- Přílohy PDF/DOCX/UTF-8 MD: upload, ověření, metadata, přejmenování, privátní stažení a potvrzené smazání. Dostupné s vlastní dílnou i bez ní. Žádná galerie, workflow postupů nebo jiné budoucí moduly.
+- Migrace `20261117000100_documents.sql` a `20261117000200_document_shape.sql`: Document/Asset/AssetLink, složené vlastnické FK, RLS, runtime granty, indexy, odložená kontrola hlavní přílohy a ochrana připojení ready assetů. Drizzle modely odpovídají těmto tabulkám; původní migrace zachovány.
+- Lokální Storage zapnuto bezpečným stop/start se zachováním dat. `local:storage` připravuje soukromý bucket, limity a restriktivní politiku proti přímému anon/JWT přístupu. Serverový klíč je pouze v ignorované konfiguraci a úzkém adaptéru; aplikační DB stále používá omezenou runtime roli.
+- Pending → ready → deleting, checksum, opakovatelná finalizace, neměnný objekt bez upsert, atomické vazby dokumentů a bezpečný opakovatelný dávkový úklid s výchozím dry-run. Úklid znovu ověřuje reference pod zámkem a respektuje ochrannou lhůtu i expiraci upload tokenu.
+- Obrázky: klientská orientace/zmenšení/komprese, serverová kontrola signatury a dekódování; omezené ZIP/XML pro DOCX a striktní UTF-8 pro MD. Pevné horní meze a konfigurovatelné nižší limity. Validační kontrola není antivirus.
+- Autorizovaný content endpoint doručuje ověřený MIME, private/no-store, nosniff, sandbox CSP a attachment pro soubory. Signed download vzniká jen interně, s krátkým TTL a novou autorizací při každém požadavku.
+- Aktualizované README, .env.example, decisions a UI pravidla. Provozní návod `docs/files-and-maintenance.md` obsahuje přípravu, limity, obnovu, údržbu a ruční scénář. Zadání zachováno v `docs/stage-04-prompt.md`.
+
+### Skutečně spuštěné kontroly
+
+- Instalace uzamčených kompatibilních knihoven: Tiptap 3.34.0, sharp 0.35.5, yauzl 3.4.0, fast-xml-parser 5.12.1 a typy yauzl; npm hlásilo 0 známých zranitelností. Stávající framework/Auth/ORM bez upgradu.
+- `npm run local:stop`, `npm run local:start`, `npm run db:migrate`, `npm run local:storage`: prošly. Storage a obě nové migrace dostupné na skutečném lokálním stacku, bez resetu dat. Opravena počáteční nekompatibilita top-level await ops skriptu s CJS během přípravy; opakovaný běh uspěl.
+- `npm run lint`, `npm run typecheck`, `NEXT_TELEMETRY_DISABLED=1 npm run build`: prošly bez lint chyb/varování.
+- `npm run test:integration`: **33/33**, včetně zachovaných testů etap 2–3 a 9 nových scénářů + hlavního testu. Skutečné Auth/PostgreSQL/Storage, runtime RLS, CRUD, idempotence, hledání/stránkování, PDF/DOCX/MD, obrázek a Asset ID, A/B izolace, přímý Storage přístup, neaktivní/pending/staré relace, XSS/atributy/limity/signatury, SQL FK a hlavní příloha, reference, grace, chybějící objekt, selhání mazání a retry, souběh finalizace/připojení s deleting a expirace signed odkazu.
+- `npm run test:e2e`: finálně **4/4**, Chrome proti lokálnímu produkčnímu Next. Poznámka s obrázkem, normalizace clipboard HTML, ztracená odpověď skutečné finalizace a retry, chyby/fokus/klávesnice, neuložené změny, konflikt se zachováním lokální verze, nové přihlášení, PDF upload/download/přejmenování/mazání, hledání a chybné PDF. Zachované průchody identitou a hesly.
+- Samostatný E2E test skutečně spustí Next na portu 3102, uloží poznámku i PDF, proces ukončí a znovu spustí; text i původní bajty souboru zůstávají dostupné. Nejde jen o reload nebo nový browser context.
+- Prohlížečové ověření na 375 i 1440 px bez vodorovného přetečení. Screenshot editoru v obou šířkách a mobilního detailu PDF vizuálně zkontrolován. Snímky jsou v dočasném adresáři OS a obsahují pouze izolované fixture údaje.
+- Během E2E opraveny testovací selektory kolidující s Next route announcerem a čekání na dokončení odhlášení. Simulace přerušené sítě vedla k doplnění českých zpráv místo původních prohlížečových výjimek.
+- `npm run files:cleanup -- --dry-run`: prošel, 0 kandidátů, 0 smazaných, 0 selhání. Skutečné mazání testováno výhradně na UUID testovacích vlastníků, včetně simulované chyby a následného opakování.
+- Klientské sestavené soubory neobsahují Storage/Auth privilegované klíče, migrační URL ani runtime DB přístup. Env soubory ignorované; `git diff --check` bez problémů.
+
+### Omezení a další krok
+
+- Bez otevřeného funkčního či testovacího blokátoru. Testování pouze lokální; žádný supabase link, cloudová migrace, Heroku změna, push nebo nasazení. Testovací identity a soubory uklizeny, ruční data zachována. Lokální Supabase běží, testovací Next procesy ukončeny.
+- Supabase signed upload má pevnou platnost 2 hodiny; úklid čeká nejméně 24 hodin a kontroluje expiraci. Již vydaný bearer download může fungovat do expirace; okamžité odvolání se neslibuje. Prohlížeči se download token neposkytuje, čtení jde přes autorizovaný endpoint a zatěžuje přenos Next serveru.
+- Validace není antivirová ochrana. HEIC, aktivní SVG/HTML, makra, DOCX editor/konverze, OCR a extrakce textu nejsou podporované. Originály fotografií se nahrazují optimalizovanou kopií, dokumentové přílohy zůstávají původní.
+- U právě připraveného prostředí stačí `npm run dev`, http://localhost:3000/documents. Při přechodu z jiného checkoutu postupovat podle návodu a aplikovat migrace + `local:storage`, nepřegenerovávat existující env.
+- Etapa 4 dokončena. Etapa 5 (pracovní postupy/výrobky) nebyla zahájena; čeká na samostatné zadání.

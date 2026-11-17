@@ -36,3 +36,7 @@ Materiály se zobrazují jen při vlastní dílně; přímé URL ověřuje serve
 ## Etapa 3 — hesla
 
 Povinná změna používá samostatný formulář mimo privátní shell, nové heslo a potvrzení, vysvětlení odhlášení všech zařízení a možnost odhlásit se. Nastavení obsahuje navíc současné heslo. Pole mají autocomplete current-password/new-password, viditelné popisky a chyby s přesunem fokusu po vykreslení. Při odesílání se zabrání opakovanému požadavku. Po změně následuje plná navigace na přihlášení s potvrzením úspěchu. Expirace vysvětluje potřebu provozního resetu. Žádné administrační odkazy ani registrace.
+
+## Etapa 4 — dokumenty a editor
+
+Dokumenty mají skutečný seznam, hledání názvu, stránkování, samostatný prázdný stav a nulový výsledek hledání. Hlavní akce Nová poznámka / Nahrát dokument. WYSIWYG má zalamovací lištu, viditelný focus, explicitní Uložit a upozornění na neuložené změny. Konflikt zachová lokální obsah a nabídne vědomé načtení aktuální verze. Obrázky jsou v textu, bez galerie. Upload rozlišuje nahrávání, ověřování, ověřeno a chybu s možností opakovat ověření. PDF/DOCX/MD mají bezpečný detail a stažení, žádný HTML náhled. Rozhraní respektuje sdílené tokeny a 375 px.

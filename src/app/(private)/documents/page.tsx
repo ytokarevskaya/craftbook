@@ -1,5 +1,10 @@
-import { requireAccount } from "@/server/account";
-import { PageHeading } from "@/components/page-heading";
-import { EmptyState } from "@/components/empty-state";
-export const metadata = { title: "Dokumenty" };
-export default async function Page() { await requireAccount(); return <><PageHeading title="Dokumenty" description="Poznámky a podklady pro studium i práci v dílně."/><section className="panel section-empty"><EmptyState icon="document" title="Vaše poznámky budou mít své místo" description="Zde budete pracovat s poznámkami a přílohami PDF, DOCX a Markdown."/></section></>; }
+import Link from 'next/link';
+import { requireAccount } from '@/server/account';
+import { documentDeps } from '@/server/documents';
+import { listDocuments } from '@/modules/documents/service';
+import { PageHeading } from '@/components/page-heading';
+export const metadata={title:'Dokumenty'};
+export default async function Page({searchParams}:{searchParams:Promise<{q?:string;page?:string}>}){await requireAccount();const params=await searchParams;const q=(params.q??'').slice(0,180),page=Math.max(1,Math.min(10000,Number(params.page)||1));const data=await listDocuments(await documentDeps(),q,page);
+ return <><PageHeading title="Dokumenty" description="Vaše poznámky, fotografie v textu a podklady pro práci."/><div className="document-actions"><Link className="primary-button" href="/documents/new">Nová poznámka</Link><Link className="secondary-button" href="/documents/upload">Nahrát dokument</Link></div><form className="document-search"><label htmlFor="search">Hledat podle názvu</label><div><input id="search" name="q" defaultValue={q} maxLength={180}/><button type="submit">Hledat</button></div></form>
+ <section className="panel document-list">{data.items.length?data.items.map(d=><article key={d.id}><Link href={`/documents/${d.id}`}>{d.title}</Link><span className="badge">{d.kind==='note'?'Poznámka':'Soubor'}</span><time dateTime={String(d.updated_at)}>{new Date(d.updated_at).toLocaleDateString('cs-CZ',{timeZone:'Europe/Prague'})}</time></article>):<div className="empty-state"><h2>{q?'Žádné odpovídající dokumenty':'Zatím tu nemáte dokumenty'}</h2><p>{q?'Zkuste jiný název nebo vymažte hledání.':'Začněte poznámkou nebo nahrajte PDF, DOCX či MD.'}</p></div>}</section><nav className="document-actions" aria-label="Stránkování dokumentů">{page>1&&<Link href={`/documents?q=${encodeURIComponent(q)}&page=${page-1}`}>Předchozí</Link>}<span>Strana {page} · {data.total} dokumentů</span>{page*20<data.total&&<Link href={`/documents?q=${encodeURIComponent(q)}&page=${page+1}`}>Další</Link>}</nav></>;
+}

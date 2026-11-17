@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 // Fixed local-only operations; never forward arbitrary CLI flags or remote targets.
 const operations = {
-  start: ['start', '--exclude', 'realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor'],
+  start: ['start', '--exclude', 'realtime,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor'],
   stop: ['stop'],
   migrate: ['migration', 'up'],
 };

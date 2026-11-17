@@ -6,7 +6,7 @@ export function json(body: unknown, status = 200) { return Response.json(body, {
 export function assertOrigin(request: Request) {
   if (request.headers.get("origin") !== new URL(authConfig().appUrl).origin) throw new AccessError("FORBIDDEN");
 }
-export async function readJson(request: Request) {
+export async function readJson(request: Request, limit = 8192) {
   if (!request.headers.get("content-type")?.startsWith("application/json")) throw new AccessError("FORBIDDEN");
   // Stream limit applies even without a Content-Length header.
   const reader = request.body?.getReader();
@@ -16,7 +16,7 @@ export async function readJson(request: Request) {
     const { value, done } = await reader.read();
     if (done) break;
     size += value.length;
-    if (size > 8192) { await reader.cancel(); throw new SyntaxError(); }
+    if (size > limit) { await reader.cancel(); throw new SyntaxError(); }
     chunks.push(value);
   }
   return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;

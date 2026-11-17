@@ -39,7 +39,8 @@ enabled = false
 [local_smtp]
 enabled = false
 [storage]
-enabled = false
+enabled = true
+file_size_limit = "10MiB"
 [realtime]
 enabled = false
 [analytics]
