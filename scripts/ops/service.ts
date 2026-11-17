@@ -4,6 +4,8 @@ import type { Pool, PoolClient } from "pg";
 import { accountLock, OperationConflict } from "../../src/modules/identity/operation-lock";
 import { passwordValue } from "../../src/modules/identity/password-input";
 import { assertLocalUrl } from "../local-common";
+import { assertCloudOps } from "../cloud/guard";
+import { cloudTarget } from "../../src/lib/cloud-target";
 import { assertRecoveryEnvironment } from "../recovery/environment";
 
 export type OpsKind = "create" | "provision" | "reset" | "deactivate";
@@ -12,14 +14,17 @@ type Operation = { id: string; target_id: string; kind: string; status: string; 
 export class OpsError extends Error {
   constructor(public readonly code: "AUTH_FAILED" | "DB_FAILED" | "CONFLICT" | "INTERRUPTED", public readonly operationId?: string) { super(code); }
 }
-export type OpsDependencies = { pool: Pool; admin: SupabaseClient; authUrl: string; publicKey: string; recoveryWorkdir?: string; checkpoint?: (point: string) => Promise<void> };
+export type OpsDependencies = { pool: Pool; admin: SupabaseClient; authUrl: string; publicKey: string; recoveryWorkdir?: string; cloudProject?: string; checkpoint?: (point: string) => Promise<void> };
 async function transaction<T>(client: PoolClient, run: () => Promise<T>) {
   await client.query("BEGIN");
   try { const result = await run(); await client.query("COMMIT"); return result; }
   catch (error) { await client.query("ROLLBACK"); throw error; }
 }
 export async function runOperation(deps: OpsDependencies, input: OpsInput) {
-  if (deps.recoveryWorkdir) await assertRecoveryEnvironment(deps.recoveryWorkdir,deps.authUrl,true);
+  if(deps.cloudProject) {
+    if(deps.cloudProject!==cloudTarget.projectRef||deps.recoveryWorkdir)throw new OpsError("CONFLICT");
+    await assertCloudOps(deps.pool,deps.authUrl);
+  } else if (deps.recoveryWorkdir) await assertRecoveryEnvironment(deps.recoveryWorkdir,deps.authUrl,true);
   else assertLocalUrl(deps.authUrl, "auth");
   // Pool/admin come from localConnections or the explicitly guarded isolated recovery target.
   if (!/^[0-9a-f-]{36}$/i.test(input.key) || !input.reference.trim() || input.reference.length>120) throw new OpsError("CONFLICT");

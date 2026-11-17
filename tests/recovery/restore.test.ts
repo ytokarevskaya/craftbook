@@ -1,13 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, writeFile, cp, rm } from 'node:fs/promises';
-import { randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createClient } from '@supabase/supabase-js';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import sharp from 'sharp';
 import { chromium } from '@playwright/test';
 import { createEnvironment, startEnvironment, migrateEnvironment, stopEnvironment, type Environment } from '../../scripts/recovery/environment';
+import { dumpDatabase } from '../../scripts/cloud/dump';
 import { backup, restore, verifyBackup, prepareStorage } from '../../scripts/recovery/backup';
 import { runOperation } from '../../scripts/ops/service';
 import { verifyIdentity, withAccount } from '../../src/modules/identity/service';
@@ -77,6 +78,15 @@ test('Etapa 9: skutečná izolovaná záloha → obnova → reset → nový prov
   const backupPath=base+'/backup';
   console.log('Obnova: vytvářím skutečný dump a kopii Storage v okně bez zápisů.');
   const manifest=await backup({admin:source.admin,migration:source.migration,projectId:source.marker.projectId},backupPath,true);
+  if(process.env.CRAFTBOOK_TEST_PG_NETWORK_DUMP==='1') {
+   const bytes=await dumpDatabase(source.migration.options.connectionString!,false);
+   const entry=manifest.entries.find(e=>e.path==='app.dump')!;
+   entry.bytes=bytes.length;entry.sha256=createHash('sha256').update(bytes).digest('hex');
+   manifest.versions.transport='pg_dump-network-v17';
+   await writeFile(backupPath+'/app.dump',bytes,{mode:0o600});
+   await writeFile(backupPath+'/manifest.json',JSON.stringify(manifest,null,2),{mode:0o600});
+   console.log('Obnova: síťový pg_dump transport používaný cloudovým nástrojem ověřen na izolovaném zdroji.');
+  }
   assert.equal(manifest.versions.schema,'migrations/20261117001000_export.sql');
   assert.equal(manifest.identities.length,3);assert.equal(manifest.objects.length,3);
   for(const variant of ['corrupt','missing','incomplete']) {

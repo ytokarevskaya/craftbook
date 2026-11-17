@@ -287,3 +287,16 @@ Přípravy pro samostatnou etapu 10, bez aktuálního nasazení:
   až pro konkrétní autorizované prostředí, ne obcházením lokálních ochran.
 - Ověřit doménu/HTTPS/cookies, soukromý bucket, paměť Eco, limity exportů,
   restart a zálohování skutečného pilotu před pozváním dalších osob.
+
+### Etapa 10 — uzavřený cloudový pilot
+
+Cílem je osobní EU Heroku aplikace `craftbook-app` a Supabase
+`vayxezlkyognarkqebbg`. Cloudové nástroje mají výslovné příkazy `cloud:*`,
+oddělenou ignorovanou `.env.ops.cloud.local`, ověřované TLS/CA, omezenou
+runtime roli a kontrolu přesných cílů. Lokální konfigurace zůstává lokální.
+
+[Nasazení, provozní příkazy a skutečné výsledky](docs/deployment.md).
+Nejprve `npm run cloud:setup`, případně `cloud:cert`, pak `cloud:inspect`.
+Hesla/klíče zadávejte pouze lokálně skrytě, neposílejte je do chatu ani Git.
+První účet vyžaduje osobní přihlášení a změnu hesla; dočasné přístupy jsou
+pouze v chráněném ignorovaném `.env.pilot-login.local`.

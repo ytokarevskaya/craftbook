@@ -3,11 +3,13 @@ import { mkdir, readFile, writeFile, readdir, stat, realpath } from 'node:fs/pro
 import { resolve, join, relative, isAbsolute } from 'node:path';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Pool } from 'pg';
+import { cloudTarget } from '../../src/lib/cloud-target';
+import { assertCloudOps } from '../cloud/guard';
 import { command, assertRecoveryEnvironment, setRuntimePassword, type Environment } from './environment';
 const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
 const bucketId='craftbook-private';
 const bucketOptions={public:false,fileSizeLimit:10485760,allowedMimeTypes:['image/jpeg','image/png','image/webp','application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document','text/markdown']};
-export type BackupSource={admin:SupabaseClient;migration:Pool;projectId:string};
+export type BackupSource={admin:SupabaseClient;migration:Pool;projectId:string;dump?:()=>Promise<Buffer>};
 type Entry={path:string;bytes:number;sha256:string};
 type ObjectEntry=Entry & {bucket:string;key:string;mime:string};
 type Identity={id:string;email:string;blocked:boolean};
@@ -46,7 +48,10 @@ async function objectDownload(admin:SupabaseClient,key:string) {
 async function objectBytes(admin:SupabaseClient,key:string) {return (await objectDownload(admin,key)).bytes;}
 export async function backup(source:BackupSource,directory:string,maintenanceConfirmed:boolean) {
  if(!maintenanceConfirmed)throw new Error('MAINTENANCE_REQUIRED');
- if(!/^craftbook-(local|r-source-[a-f0-9]{8})$/.test(source.projectId))throw new Error('UNSAFE_BACKUP_SOURCE');
+ if(source.projectId===cloudTarget.projectRef) {
+  if(!source.dump)throw new Error('CLOUD_DUMP_REQUIRED');
+  await assertCloudOps(source.migration,cloudTarget.authUrl);
+ }else if(!/^craftbook-(local|r-source-[a-f0-9]{8})$/.test(source.projectId)||source.dump)throw new Error('UNSAFE_BACKUP_SOURCE');
  const path=resolve(directory),repo=await realpath('.');
  if(path===repo||path.startsWith(repo+'/'))throw new Error('BACKUP_INSIDE_REPOSITORY');
  await mkdir(path,{mode:0o700}); // existing output is never overwritten
@@ -75,9 +80,16 @@ export async function backup(source:BackupSource,directory:string,maintenanceCon
   async function save(name:string,bytes:Buffer) {
    await writeFile(join(path,name),bytes,{mode:0o600,flag:'wx'});const entry={path:name,bytes:bytes.length,sha256:hash(bytes)};entries.push(entry);return entry;
   }
-  await save('app.dump',await command('docker',['exec',`supabase_db_${source.projectId}`,'pg_dump','-U','postgres','-d','postgres','--format=custom','--schema=app','--lock-wait-timeout=5000']));
+  await save('app.dump',source.dump?await source.dump():await command('docker',['exec',`supabase_db_${source.projectId}`,'pg_dump','-U','postgres','-d','postgres','--format=custom','--schema=app','--lock-wait-timeout=5000']));
   await mkdir(join(path,'migrations'),{mode:0o700});
-  for(const file of (await readdir('supabase/migrations')).filter(f=>/^\d+_.*\.sql$/.test(f)).sort())await save('migrations/'+file,await readFile(join('supabase/migrations',file)));
+  const allMigrations=(await readdir('supabase/migrations')).filter(f=>/^\d+_.*\.sql$/.test(f)).sort();
+  const applied=tables.some(t=>t.name==='schema_migration')?(await lock.query<{name:string;checksum:string}>('select name,checksum from app.schema_migration order by name')).rows:null;
+  if(applied&&applied.some((r,i)=>r.name!==allMigrations[i]))throw new Error('BACKUP_MIGRATION_MISMATCH');
+  for(const file of applied?applied.map(r=>r.name):allMigrations){
+   const bytes=await readFile(join('supabase/migrations',file));
+   if(applied&&applied.find(r=>r.name===file)?.checksum!==hash(bytes))throw new Error('BACKUP_MIGRATION_MISMATCH');
+   await save('migrations/'+file,bytes);
+  }
   await save('config.toml',await readFile('supabase/config.toml'));
   await save('runtime-role.sql',Buffer.from('CREATE ROLE craftbook_runtime LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;\n'));
   await mkdir(join(path,'objects'),{mode:0o700});

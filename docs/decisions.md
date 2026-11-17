@@ -187,3 +187,47 @@
   navzdory dokumentaci stále inlinovaný; Reflect.get je ověřený v sestavených
   serverových chunkech a následným přihlášením do obnoveného projektu. Podklad:
   https://nextjs.org/docs/app/guides/environment-variables#bundling-environment-variables-for-the-browser.
+
+## 17. 11. 2026 — Etapa 10: nasazení uzavřeného pilotu
+
+- Cíle jsou výslovně povolený ref vayxezlkyognarkqebbg a API ověřená osobní EU
+  Heroku craftbook-app / e1b8d94d-af33-4b0d-b45d-a9f2bb3a8de7. Přesný app name
+  nebyl odhadnut z generované domény. Staré aplikace/projekty se nemění.
+- Samostatné cloudové ops bez automatického dotenv míchání. parseEnv čte jen
+  0600 .env.ops.cloud.local; setup má skrytý vstup. Cloud Admin/migrační hodnoty
+  nepatří do Heroku webu. Web potřebuje jen runtime, Storage a veřejné Auth údaje.
+- pg přes session pooler :5432, jméno role.ref, malý pool a explicitní TLS
+  rejectUnauthorized=true + servername + projektová CA. V URL zakázané SSL/query
+  parametry, aby pg nepřepsal TLS objekt. První TLS pokus korektně odmítl
+  SELF_SIGNED_CERT_IN_CHAIN; uživatelka doplnila CA z Dashboardu. Kontrola nebyla
+  vypnutá. Password builder explicitně percent-encoduje i doslovné %.
+- SSL enforcement zapnutý pouze pro tento prázdný projekt; poté ověřeno i
+  pooler → PG TLS. Samotné pg_stat_ssl neprokazuje TLS klient → pooler, to
+  vynucuje a ověřuje driver. Supabase postgres je NOSUPERUSER/BYPASSRLS;
+  runtime zůstává NOSUPERUSER/NOBYPASSRLS, bez vlastnictví/členství.
+- Cloud migrace používají původní SQL, transakci pro soubor, advisory lock a
+  neveřejnou app.schema_migration s SHA-256. Neznámý stav nebo změněná historie
+  se odmítá. První bootstrap byl prázdný v DB/Auth/Storage. Opakování nemění
+  existující hesla, účty ani dokončené migrace. Další změny vyžadují čerstvou
+  ověřenou zálohu a zastavený web. Žádný db reset nebo automatické migrace startu.
+- Runtime role má vlastní generované heslo odlišné od postgres; uložení pouze
+  v ignorovaném ops souboru. První osobní účet přes sdílenou ops logiku pending
+  na 48 h, dočasné údaje pouze v 0600 .env.pilot-login.local, bez SMTP a admin UI.
+- Auth uzavřený, přesný HTTPS origin, bez callback/redirect wildcardu. Storage
+  craftbook-private soukromý, přímé anon/JWT operace uzavřené. Data API zůstává
+  vypnuté; žádné doménové supabase.from/rpc. Dva INFO advisory nálezy pro ops
+  tabulky bez politik jsou záměrný deny; WARN leaked-password protection se
+  řeší dokumentací stávající politiky, nikoli zapnutím placené služby.
+- Heroku oficiální Node buildpack, Node 24.x, heroku-postbuild bez DB, Procfile
+  web přes start.mjs / 0.0.0.0 / PORT. HTTPS redirect staví URL z APP_URL,
+  nikdy z Host/X-Forwarded-Host. Config Vars připravené před buildem.
+- Nasazovací cesta je oficiální Heroku Sources/Build API s git archive přesného
+  čistého HEAD; source_blob.version je SHA, soukromé signed URL se nelogují.
+  GitHub obsah se nesmí zaměnit za necommitnutou práci. Automatic Deploys
+  uživatelka potvrdila vypnuté; žádné jiné releasy nebo aplikace se nemění.
+- Síťový pg_dump má dočasný 0600 pgpass/CA a lokální jednorázový Docker,
+  žádná hesla v argv ani nové nástroje/služby v cloudu. Konkrétní transport
+  prošel skutečnou izolovanou obnovou DB/Auth/Storage a vykreslením 1440/375.
+- Dva syntetické cloudové účty a ponechání jejich testovacího ledgeru byly
+  výslovně schválené uživatelkou. Testy nesmějí sahat na osobní první účet,
+  mazat pohyby nebo importovat lokální skutečná data; po testu účty deaktivovat.

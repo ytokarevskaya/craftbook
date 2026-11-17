@@ -422,3 +422,30 @@ Etapa 1 končí zde. Další je samostatně zadaná etapa 2 (skutečná identita
   Další krok je pouze samostatně autorizovaná etapa 10: konkrétní pilotní konfigurace, HTTPS,
   migrace/runtime RLS, soukromý bucket, Eco/paměť/restart a provozní zálohování.
   Přehled názvů konfigurace je v README a .env.example, bez hodnot tajemství.
+
+## 17. 11. 2026 — Etapa 10: příprava a nasazení pilotu (probíhá)
+
+- Výchozí čistý commit 9e08d88 obsahuje etapy 7–9 a doloženou lokální obnovu.
+  Lokální soubory/DB se nepřepnuly do cloudu. Žádná osobní data se neimportují.
+- Přes API ověřena osobní EU aplikace craftbook-app,
+  e1b8d94d-af33-4b0d-b45d-a9f2bb3a8de7, heroku-24, oficiální Node buildpack,
+  bez add-onů/workerů, dostupná velikost Eco. Supabase ref
+  vayxezlkyognarkqebbg, eu-west-1, organizace jfrylueyelglcduamzin, prázdný
+  DB/Auth/Storage před první mutací. Automatic Deploys potvrzené vypnuté.
+- Připraven oddělený cloudový setup/ops a chráněná konfigurace, TLS a password
+  URL builder. Cloudové migrace 12/12 skutečně aplikovány se SHA-256 historií,
+  bez superusera; runtime přes pooler ověřen bez vlastnictví/BYPASSRLS/členství
+  a s uzavřenou RLS bez kontextu. Oba úseky TLS po cíleném SSL enforcement.
+- Auth registrace/provideri uzavřené, přesný HTTPS Site URL, soukromý bucket
+  a politika. Osobní první účet připraven pending_password s expirací 48 h;
+  dočasné údaje jen v ignorovaném 0600 souboru, nikoli reportu/Git.
+- Heroku runtime Config Vars připravené bez migrační URL a Auth Admin klíče,
+  s CA. Nový start/Procfile, Node 24 a produkční build, kanonické HTTPS.
+- Lokální kontroly: 74/74 integračních, 14/14 E2E, 3/3 testy cloudových ochran,
+  1/1 skutečná izolovaná obnova síťového dumpu včetně Auth/Storage a 375 px.
+  Lint/typecheck/build prošly i po dokončení provozního smoke skriptu.
+  Kontrola souborů ke commitu nezjistila cloudová tajemství ani osobní e-mail.
+- Security advisors: pouze záměrné INFO pro ops tabulky bez RLS politik a WARN
+  leaked-password protection; žádná placená funkce nebyla zapnutá.
+- Nasazovací commit/release, cloudový smoke, paměť/restart a pilotní záloha
+  se doplní po skutečném provedení. Pilot není označen za dokončený jen buildem.

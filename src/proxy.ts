@@ -1,6 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 export async function proxy(request: NextRequest) {
+  const appUrl=process.env.APP_URL;
+  if(appUrl?.startsWith('https://')&&request.headers.get('x-forwarded-proto')==='http') {
+    // Canonical trusted origin; never construct redirects from Host/X-Forwarded-Host.
+    const destination=new URL(appUrl);destination.pathname=request.nextUrl.pathname;destination.search=request.nextUrl.search;
+    return NextResponse.redirect(destination,308);
+  }
   let response = NextResponse.next({ request });
   const env = process.env;
   const url = Reflect.get(env, 'NEXT_PUBLIC_SUPABASE_URL');
