@@ -58,7 +58,7 @@ test('Etapa 5: školní cyklus a skutečná RLS/Storage',async t=>{
    const snapshot=d.snapshot,extra=randomUUID();await work.updateActual(da,id,{version:d.product.row_version,schoolCost:null,actual:[],additional:[{id:extra,specification:'Dodatečná součástka',type:'component',unit:'ks',quantity:'2'}]});d=await work.getProduct(da,id);assert.equal(d.materials.find(m=>m.id===extra)?.planned_quantity,null);assert.equal(d.materials.find(m=>m.id===extra)?.actual_quantity,'2.000');assert.deepEqual(d.snapshot,snapshot);assert.deepEqual(d.product.completed_at,time);assert.equal(work.proposal(d).materials.find(m=>m.id===extra)?.quantity,'2.000');
    assert.throws(()=>planInput.parse({...plan(),materials:[{id:randomUUID(),specification:'Kámen',type:'stone',unit:'ks',quantity:'1.5'}]}));assert.throws(()=>planInput.parse({...plan(),materials:[{id:randomUUID(),specification:'Kov',type:'metal',unit:'g',quantity:'1.2345'}]}));
    await assert.rejects(()=>work.saveProduct(da,{id:randomUUID(),source:'own',procedureId:null,procedureRevision:null,plan:plan()}));
-   assert.equal((await ops.query("select count(*)::int n from pg_tables where schemaname='app' and tablename like 'inventory%'")).rows[0].n,0);
+   assert.equal((await ops.query("select count(*)::int n from app.inventory_movement where owner_id=$1",[a.id])).rows[0].n,0);
   });
   await t.test('A/B, cizí vazby, neaktivní účet, stará relace a konflikty editace',async()=>{
    const foreign=randomUUID();await work.saveProcedure(dbb,{id:foreign,plan:plan()});await assert.rejects(()=>work.getProcedure(da,foreign));await assert.rejects(()=>product(plan(),{id:foreign,revision_counter:1} as work.Procedure));

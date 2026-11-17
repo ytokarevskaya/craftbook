@@ -1,0 +1,10 @@
+import { z } from 'zod';
+import { normalize,units } from './decimal';
+export const id=z.uuid();
+const decimal=(scale:number,digits:number)=>z.string().transform((v,c)=>{try{return normalize(v,scale,digits);}catch{c.addIssue({code:'custom',message:'Neplatné množství nebo cena.'});return z.NEVER;}});
+export const quantity=decimal(3,15),money=decimal(6,14).nullable();
+const positive=quantity.refine(v=>units(v,3)>0n);
+const short=z.string().trim().max(1000).default('');
+export const itemInput=z.object({id,version:z.number().int().positive().optional(),name:z.string().trim().min(1).max(180),description:z.string().max(10000).default(''),type:z.enum(['metal','stone','component']),alloy:short,fineness:short,form:short,profile:short,dimensions:short}).strict();
+export const purchaseInput=z.object({requestKey:id,businessDate:z.iso.date(),supplier:z.string().trim().min(1).max(180),note:z.string().max(10000).default(''),lines:z.array(z.object({itemId:id,quantity:positive,totalCost:money}).strict()).min(1).max(100),attachments:z.array(id).max(20).default([])}).strict();
+export const stockInput=z.object({requestKey:id,itemId:id,quantity,reason:z.string().trim().min(1).max(2000),totalCost:money.default(null),expectedVersion:z.number().int().positive().optional(),correctsOperationId:id.nullable().default(null)}).strict();

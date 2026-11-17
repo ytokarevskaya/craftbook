@@ -79,3 +79,7 @@ Automaticky: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run test
 `AssetLink` má právě jeden skutečný cíl: dokument, postup, výrobek, zápis deníku nebo původní kopii plánu výrobku. Složené FK vyžadují stejného vlastníka assetu a cíle. Přílohy celého postupu/plánu nejsou fotografie jednotlivých kroků; produktové fotografie mají role průběh/hotový výrobek, deník používá dosavadní Asset ID v bezpečném obsahu.
 
 První zahájení vytvoří samostatné chráněné snapshotové vazby. Úprava/archivace vzoru, změna pracovního plánu či smazání zápisu je neodstraní. Stávající úklid kontroluje všechny řádky AssetLink bez ohledu na cíl a soubor s libovolnou referencí nesmaže. Runtime nemůže snapshot ani jeho vazby měnit nebo mazat. Ostatní lhůty, upload/finalize/retry a soukromé čtení zůstávají stejné. Prohlížeč neobdrží privilegované klíče ani trvalé veřejné URL.
+
+## Faktury od etapy 6
+
+Purchase má skutečnou vlastnickou FK z AssetLink (role invoice). Připojit lze pouze vlastní ověřený ready soubor. Při přípravě faktury nebo prvním připojení k nákupu se asset trvale označí workshop_only: bez vlastní dílny jej nelze číst ani finalizovat přes obecné endpointy. Příznak nelze runtime snížit; i soubor použitý zároveň jako dokument podléhá přísnějšímu omezení faktury. Ostatní dokumenty zůstávají dostupné. Úklid zachovává všechny reference včetně nákupních; nepřipojené uploady používají dosavadní ochranné lhůty.

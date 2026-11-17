@@ -1,0 +1,6 @@
+import Link from 'next/link';
+import { requireAccount } from '@/server/account';
+import { inventoryDeps } from '@/server/inventory';
+import { getPurchase } from '@/modules/inventory/service';
+import { formatMoney,formatQuantity } from '@/modules/inventory/decimal';
+export default async function Page({params}:{params:Promise<{id:string}>}){await requireAccount(true);const d=await getPurchase(await inventoryDeps(),(await params).id);return <><h2>{String(d.purchase.supplier)}</h2><p>{String(d.purchase.business_date)}</p><p>{String(d.purchase.note)}</p>{d.lines.map(l=><article className="panel document-form" key={String(l.id)}><h3><Link href={'/materials/'+l.item_id}>{String((l.item_snapshot as {name:string}).name)}</Link></h3><p>{formatQuantity(String(l.quantity))} · {l.total_cost===null?'Neznámá cena':formatMoney(String(l.total_cost))}</p><Link href={'/materials/'+l.item_id+'?corrects='+d.purchase.operation_id}>Opravit inventurou s odkazem na nákup</Link></article>)}<h3>Faktury</h3>{d.attachments.map(a=><p key={String(a.id)}><a href={'/api/assets/'+a.id+'/content'}>{String(a.original_name)}</a></p>)}<Link href={'/materials/movements?operationId='+d.purchase.operation_id}>Historie pohybů</Link><p>Pro opravu množství použijte inventurní korekci s důvodem na kartě materiálu.</p></>;}

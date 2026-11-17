@@ -174,3 +174,36 @@ Etapa 1 končí zde. Další je samostatně zadaná etapa 2 (skutečná identita
 - Podporován pouze school. Vlastní skladová výroba, rezervace, pohyby, vypořádání a automatické oceňování nejsou hotové. Mazání výrobků, globální galerie a historie verzí vzorů se nenabízejí. Platí dosavadní omezení souborů a ochranné lhůty úklidu.
 - Vyzkoušení ve stávajícím prostředí: `npm run dev`, pak `/procedures/new` nebo `/products/new`. Podrobný průchod v README; při jiném checkoutu nejprve lokální stack a migrace. Existující env nepřegenerovávat.
 - Etapa 5 dokončena. Etapu 6 nezačínat bez samostatného zadání.
+
+## Etapa 6 — průběžný záznam implementace (17. 11. 2026)
+
+- Zadání zachováno v stage-06-prompt.md, model a pravidla zaokrouhlení zapsána v decisions před migrací. Počáteční git stav byl čistý.
+- Lokálně aplikována migrace 20261117000400_inventory.sql bez resetu: karty, balance, operace, nákupy/řádky, append-only pohyby a FK faktur. RLS vyžaduje vlastní dílnu. Rezervační složky jsou nulové.
+- Implementován základ přesné BigInt aritmetiky, transakční nákup, počáteční stav, odpis, inventurní korekce, idempotence, stabilní zámky, archivace a diagnostika rekonstrukce. Rozšířen souborový modul o workshop_only; dokončení integrace a bezpečnostní ověření ještě zbývají.
+- První skutečný integrační scénář prošel: 20 g / 700 Kč, odpis 2 g → 18 g / 630 Kč; souběžný retry bez duplikátu, historie souhlasí, vypnutá dílna odmítá přístup. Nejde o dokončené povinné ověření etapy.
+- Samostatný TypeScript bez incremental cache a lint v této fázi prošly; původní incremental běh nesl staré chyby cíle ES2017. Cíl upraven na ES2020 kvůli BigInt, Node 24 zůstává zachován.
+- Zbývá UI, úplné HTTP rozhraní, modely Drizzle, širší souběžné/bezpečnostní testy, regrese a desktop/mobil. Etapa 6 zatím není dokončena, další etapy nezačínat.
+
+### Dokončení etapy 6 (17. 11. 2026)
+
+- Funkční materiálové karty s typem, specifikací, úpravou názvu/popisu, archivací a obnovou. Specifikace a jednotka po prvním pohybu chráněny serverem i SQL triggerem. Archivovaná zásoba je viditelná; nové pohyby jsou blokované.
+- Zásoby mají hledání, typový filtr a stabilní stránkování. Detail rozlišuje neúplné ocenění, známou hodnotu, neoceněné množství a plný průměr pouze u oceněné zásoby. Množství různých jednotek se nesčítají.
+- Počáteční stav, atomické vícepoložkové nákupy (včetně opakované karty), odpis s důvodem, inventura s očekávanou verzí. Historie je append-only, obsahuje osm samostatných delta složek a historickou specifikaci, pořadí zaúčtování nezávislé na datu nákupu. Oprava přes inventuru má odkaz na původní operaci. Nákup po zaúčtování je pouze pro čtení, včetně poznámky/příloh.
+- Faktury přes existující souborový modul: PDF/DOCX/MD, ověření/retry, skutečná vlastnická FK. Sticky workshop_only brání čtení/finalizaci i přes obecné souborové endpointy bez dílny. Úklid respektuje fakturové reference.
+- UI Zásoby / Nákupy / Pohyby, filtry historie podle typu, materiálu a data, stránkování, české desetinné vstupy, potvrzení změn a chyby s fokusem. Přidána ochrana rozepsaných formulářů. Obecné dokumenty a školní výrobky zachované.
+- Diagnostika `GET /api/inventory/reconcile` ověří přihlášeného vlastníka/dílnu a porovná všechny složky balance s historií pod zámkem, bez oprav. Drizzle modely přidané pro sklad i rozšíření souborů.
+
+### Skutečně spuštěné kontroly etapy 6
+
+- Lokální migrace, lint, typecheck a produkční build prošly. Žádné nové knihovny nebo upgrade frameworku; target ES2020 kvůli přesné BigInt aritmetice.
+- Celá integrační regrese: **45/45**. Starý test etapy 5 upraven z neexistence skladových tabulek na nulové skladové pohyby školního uživatele; opakování prošlo.
+- Rozšířený skutečný skladový test samostatně opakovaně prošel. Obsahuje 20 g/700 Kč → odpis 2 g → 18 g/630 Kč, smíšené ocenění kovů i kusů, úplné vyčerpání zbytků, malé odpisy, celočíselné ks, numeric limit/přesnost, duplicitní/souběžný počáteční stav a nákup, jiný payload pod stejným klíčem, souběžné odpisy proti přečerpání, příjem+odpis, nákupy v opačném pořadí karet, rollback po chybě druhého řádku, inventurní konflikt, archivaci a zákaz změny typu s historií. Rekonstrukce souhlasí; runtime DELETE historie odmítnut. A/B izolace, faktura A nepřístupná B, bezkontextová RLS, vypnutí dílny blokuje sklad i read/finalize faktury, úklid připojenou fakturu zachová.
+- Celá prohlížečová regrese: **8/8**, zachované testy účtů/hesel/dokumentů/školního cyklu včetně restartu Next. Nové skladové scénáře na 1440 a 375 px: karta, dva nákupní řádky, skutečný upload PDF faktury, její dostupnost jen s dílnou, odpis, inventura, historie a nové přihlášení. Nulové vodorovné přetečení.
+- Skladové E2E po úpravě rozvržení samostatně **2/2**. Screenshoty desktop/mobil vizuálně zkontrolovány v dočasném adresáři OS, pouze fixture data. `git diff --check` bez problémů.
+
+### Hranice a další krok
+
+- Lokální implementace; bez push, cloudu, Heroku a nasazení, bez resetu osobních dat. Testy uklízejí jen vlastní UUID. Testovací weby skončily; lokální Supabase zůstává dostupný.
+- Podporované skladové operace jsou nezávislé na výrobcích. Rezervační sloupce jsou nulové; workflow rezervací, own výroba, vratný odpad a vypořádání nejsou implementované. Source own nadále odmítá původní server i SQL.
+- Příjem neopravuje staré neznámé ocenění. Úplné historické přepočty, editace zaúčtovaného nákupu a účetnictví nejsou nabízené. Platí dosavadní limity a ochranné lhůty souborů. Ověření pouze lokální; produkční provoz nebyl testovaný.
+- Spuštění a přesný ruční scénář jsou v README. Etapa 6 dokončena; etapy 7–8 nezačínat bez nového zadání.

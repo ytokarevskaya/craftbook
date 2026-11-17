@@ -2,7 +2,7 @@
 
 Jedna kniha vládne všem.
 
-Soukromá aplikace pro studenty zlatnictví a vlastní dílnu. Etapa 5 přidává pracovní postupy, školní výrobky, pracovní deník a fotografie. Zachovává dokumenty, WYSIWYG poznámky, soukromé PDF/DOCX/MD a provozní správu účtů. Vlastní skladová výroba čeká na další etapy.
+Soukromá aplikace pro studenty zlatnictví a vlastní dílnu. Etapa 6 přidává vlastní zásoby, nákupy s fakturami, odpisy, inventuru a skladovou historii. Pracovní postupy, školní výrobky, deník a fotografie z etapy 5 zůstávají zachované. Zachovává dokumenty, WYSIWYG poznámky, soukromé PDF/DOCX/MD a provozní správu účtů. Vlastní skladová výroba čeká na další etapy.
 
 ## První lokální spuštění
 
@@ -128,3 +128,19 @@ Ve stávajícím lokálním prostředí spusťte `npm run local:start`, `npm run
 5. U hotového výrobku lze opravit cenu/spotřebu, doplnit další skutečný materiál, deník a hotové fotografie. Datum dokončení a původní plán se tím nemění. Prázdná cena je jiná než nula.
 
 Seznamy podporují hledání a stránkování, výrobky také filtry stavů. Upravený vzor nepřepisuje zahájenou práci; při změně před zahájením je nutné potvrdit aktuální revizi se zachováním vlastního návrhu. Postupy se archivují, výrobky se v této etapě nemažou. Přehled ukazuje skutečné rozpracované výrobky.
+
+## Etapa 6 — vlastní sklad
+
+Ve stávajícím lokálním prostředí spusťte `npm run local:start`, `npm run db:migrate`, `npm run dev`. Migrace `20261117000400_inventory.sql` zachovává existující data. Zapněte **Vlastní dílnu** v Nastavení. Materiály mají Zásoby / Nákupy / Pohyby; vypnutí dílny data zachová, ale zablokuje sklad i čtení/finalizaci faktur. Obecné dokumenty zůstávají dostupné.
+
+Ruční kontrolní scénář:
+
+1. V Zásobách založte kartu typu Kov, například „Ag 925 — kulatý drát Ø 1 mm“. Jednotka je g. Počáteční zásobu nyní vynechte.
+2. V Nákupy → Nový nákup přidejte dva řádky stejné karty: **10 g / celková cena 300 Kč** a **10 g / 400 Kč**. Zadejte datum a dodavatele, případně přiložte PDF/DOCX/MD fakturu. Přijměte nákup.
+3. Detail karty ukáže **20 g**, hodnotu **700,00 Kč**, průměr **35,00 Kč/g**. V Odpisu zadejte **2 g**, důvod a potvrďte: zbude **18 g / 630,00 Kč**.
+4. V inventuře lze zadat skutečně zjištěné volné množství a důvod. Záporný rozdíl používá současné ocenění; kladný má volitelnou celkovou hodnotu přírůstku. Souběžná změna vyvolá konflikt. Odkaz „Opravit inventurou“ z nákupu zachová vazbu na opravovanou operaci.
+5. Pohyby zobrazují historii a filtry; reload i nové přihlášení zachovají výsledky. Archivace karty zachová zásobu a historii; pro další pohyb kartu obnovte.
+
+Prázdná cena je neznámá, nula je známé nulové ocenění. Smíšená zásoba ukazuje známou hodnotu jako neúplnou; odpis převádí známou a neznámou část poměrně. Nový příjem staré neznámé ceny nedopočítává. Částky jsou CZK, bez DPH a automatického rozpočítání dopravy. Po zaúčtování je nákup neměnný; opravy množství se evidují inventurou, nikoli úpravou historie. Poznámka a přílohy nákupu jsou v této etapě také pouze pro čtení.
+
+Přesný model a zaokrouhlování jsou v `docs/decisions.md`. Diagnostika přihlášeného vlastníka s dílnou: `GET /api/inventory/reconcile`, očekávané `{"issues":[]}`; nic neopravuje. Rezervační složky jsou skutečně nulové, rezervace ani vlastní výroba nejsou zpřístupněné. Školní výrobky sklad nemění.
