@@ -9,3 +9,8 @@ out/
 coverage/
 playwright-report/
 test-results/
+
+# Provozní zálohy nikdy nepatří do repozitáře.
+/backups/
+/recovery/
+*.dump

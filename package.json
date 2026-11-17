@@ -26,7 +26,11 @@
     "ops:resume": "tsx scripts/account-ops.ts resume",
     "ops:status": "tsx scripts/account-ops.ts status",
     "local:storage": "tsx scripts/local-storage.ts",
-    "files:cleanup": "node --conditions=react-server --import tsx scripts/files-cleanup.ts"
+    "files:cleanup": "node --conditions=react-server --import tsx scripts/files-cleanup.ts",
+    "test:recovery": "node --conditions=react-server --import tsx --test tests/recovery/*.test.ts",
+    "ops:backup": "tsx scripts/recovery-ops.ts backup",
+    "ops:restore": "tsx scripts/recovery-ops.ts restore",
+    "ops:backup:verify": "tsx scripts/recovery-ops.ts verify"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

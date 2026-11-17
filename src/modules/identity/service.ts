@@ -19,7 +19,7 @@ export async function verifyIdentity(client: SupabaseClient): Promise<VerifiedId
   return identity.data;
 }
 type Transaction = Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0];
-export async function withAccount<T>(db: NodePgDatabase, identity: VerifiedIdentity, operation: (tx: Transaction, profile: typeof userProfiles.$inferSelect) => Promise<T>) {
+export async function withAccount<T>(db: NodePgDatabase, identity: VerifiedIdentity, operation: (tx: Transaction, profile: typeof userProfiles.$inferSelect) => Promise<T>, config?: Parameters<NodePgDatabase["transaction"]>[1]) {
   identitySchema.parse(identity);
   return db.transaction(async tx => {
     await tx.execute(sql`select set_config('app.user_id', ${identity.userId}, true), set_config('app.session_id', ${identity.sessionId}, true)`);
@@ -28,7 +28,7 @@ export async function withAccount<T>(db: NodePgDatabase, identity: VerifiedIdent
     const [profile] = await tx.select().from(userProfiles).where(eq(userProfiles.userId, identity.userId));
     if (!profile) throw new AccessError("ACCOUNT_BLOCKED");
     return operation(tx, profile);
-  });
+  }, config);
 }
 export const profileInput = z.object({ displayName: z.string().trim().max(80).refine(value => !/[\u0000-\u001f\u007f]/.test(value)), hasWorkshop: z.boolean() }).strict();
 export async function updateProfile(db: NodePgDatabase, identity: VerifiedIdentity, input: unknown) {

@@ -2,8 +2,9 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const env = process.env;
+  const url = Reflect.get(env, 'NEXT_PUBLIC_SUPABASE_URL');
+  const key = Reflect.get(env, 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY');
   if (url && key) {
     const client = createServerClient(url, key, {
       cookieOptions: { httpOnly: true, sameSite: "lax", secure: process.env.APP_URL?.startsWith("https:"), path: "/" },

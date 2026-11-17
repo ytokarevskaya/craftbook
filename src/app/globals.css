@@ -195,3 +195,11 @@ body:has(.mobile-drawer[open]) { overflow: hidden; }
 summary {cursor:pointer;font-weight:600;}
 textarea:focus-visible,select:focus-visible,summary:focus-visible {outline:3px solid var(--primary);outline-offset:3px;}
 @media(max-width:600px){.work-columns{grid-template-columns:1fr;gap:0}.product-photos{grid-template-columns:1fr}}
+.reservation-targets input[type=checkbox],.settlement-form input[type=checkbox]{accent-color:var(--primary);width:auto;margin-right:10px;}
+.settlement-stock{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));}
+
+.export-panel { overflow-wrap: anywhere; }
+.export-panel .button { white-space: normal; max-width: 100%; text-align: center; }
+
+.export-download { margin-block: 14px; }
+.export-download .button + .button { margin: 8px 0 0; }

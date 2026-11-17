@@ -4,6 +4,7 @@ import type { Pool, PoolClient } from "pg";
 import { accountLock, OperationConflict } from "../../src/modules/identity/operation-lock";
 import { passwordValue } from "../../src/modules/identity/password-input";
 import { assertLocalUrl } from "../local-common";
+import { assertRecoveryEnvironment } from "../recovery/environment";
 
 export type OpsKind = "create" | "provision" | "reset" | "deactivate";
 export type OpsInput = { kind: OpsKind; key: string; reference: string; targetId?: string; email?: string; password?: string };
@@ -11,15 +12,16 @@ type Operation = { id: string; target_id: string; kind: string; status: string; 
 export class OpsError extends Error {
   constructor(public readonly code: "AUTH_FAILED" | "DB_FAILED" | "CONFLICT" | "INTERRUPTED", public readonly operationId?: string) { super(code); }
 }
-export type OpsDependencies = { pool: Pool; admin: SupabaseClient; authUrl: string; publicKey: string; checkpoint?: (point: string) => Promise<void> };
+export type OpsDependencies = { pool: Pool; admin: SupabaseClient; authUrl: string; publicKey: string; recoveryWorkdir?: string; checkpoint?: (point: string) => Promise<void> };
 async function transaction<T>(client: PoolClient, run: () => Promise<T>) {
   await client.query("BEGIN");
   try { const result = await run(); await client.query("COMMIT"); return result; }
   catch (error) { await client.query("ROLLBACK"); throw error; }
 }
 export async function runOperation(deps: OpsDependencies, input: OpsInput) {
-  assertLocalUrl(deps.authUrl, "auth");
-  // Pool and admin are only constructed by localConnections after all target checks.
+  if (deps.recoveryWorkdir) await assertRecoveryEnvironment(deps.recoveryWorkdir,deps.authUrl,true);
+  else assertLocalUrl(deps.authUrl, "auth");
+  // Pool/admin come from localConnections or the explicitly guarded isolated recovery target.
   if (!/^[0-9a-f-]{36}$/i.test(input.key) || !input.reference.trim() || input.reference.length>120) throw new OpsError("CONFLICT");
   if (input.kind !== "create" && !/^[0-9a-f-]{36}$/i.test(input.targetId ?? "")) throw new OpsError("CONFLICT");
   const email = input.email?.trim().toLowerCase();

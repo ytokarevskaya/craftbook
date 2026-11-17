@@ -1,9 +1,10 @@
 'use client';
+export class ApiError extends Error{constructor(message:string,public code:string,public status:number){super(message);}}
 export async function api<T>(url:string,body?:unknown,method='POST'):Promise<T>{
  let r:Response;
  try{r=await fetch(url,{method,headers:body===undefined?undefined:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store'});}catch{throw new Error('Spojení se přerušilo. Rozepsané změny zůstaly zachované; zkuste operaci znovu.');}
  let data;try{data=await r.json();}catch{throw new Error('Odpověď serveru se nepodařilo načíst. Zkuste operaci znovu.');}
- if(!r.ok)throw new Error(data.message??'Operace se nezdařila.');return data;
+ if(!r.ok)throw new ApiError(data.message??'Operace se nezdařila.',data.code??'REQUEST_FAILED',r.status);return data;
 }
 export async function optimizeImage(file:File):Promise<File>{
  if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw new Error('Použijte JPEG, PNG nebo WebP. HEIC nejprve exportujte jako JPEG.');

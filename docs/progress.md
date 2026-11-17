@@ -207,3 +207,218 @@ Etapa 1 končí zde. Další je samostatně zadaná etapa 2 (skutečná identita
 - Podporované skladové operace jsou nezávislé na výrobcích. Rezervační sloupce jsou nulové; workflow rezervací, own výroba, vratný odpad a vypořádání nejsou implementované. Source own nadále odmítá původní server i SQL.
 - Příjem neopravuje staré neznámé ocenění. Úplné historické přepočty, editace zaúčtovaného nákupu a účetnictví nejsou nabízené. Platí dosavadní limity a ochranné lhůty souborů. Ověření pouze lokální; produkční provoz nebyl testovaný.
 - Spuštění a přesný ruční scénář jsou v README. Etapa 6 dokončena; etapy 7–8 nezačínat bez nového zadání.
+
+## Etapa 7 — průběžný záznam implementace (17. 11. 2026)
+
+- Výchozí git stav čistý. Zadání zachováno v stage-07-prompt.md, rozhodnutí cenových částí/LIFO/zámků/hranice webu zapsána před migrací.
+- Lokálně bez resetu aplikovány 20261117000500_reservations.sql a 20261117000600_reservation_integrity.sql. Reservation, cenové části, mapování ProductMaterial, ledgerové reserve/release a FK výrobku/části/karty. Runtime nesmí měnit původní ocenění nebo mazat cenové části; odložený trigger kontroluje součet rezervovaného fondu.
+- Společný Operation mechanismus nyní umožňuje použití uvnitř zahájení výrobku, bez druhé transakce. Interní own save/start a cílové updateReservations s kontrolou revize/verze, kompatibility, dostupnosti a explicitního mapování. Snapshot obsahuje požadavek i potvrzenou specifikaci karty. Uvolnění LIFO vrací původní hodnoty; všechny návraty předcházejí novému čerpání pro atomické výměny karet.
+- Webové mutace own odmítají. Own dokončení, skutečnost a obecný návrat do planned jsou ve službě odmítnuté. Ve skladu read-only přehledy obou fondů a cenových částí; připraven callbackový formulář pro etapu 8, bez endpointu nebo skrytého bypassu.
+- První integrační regrese **54/54** skutečný PostgreSQL/Auth/Storage. Další doplněné scénáře a prohlížečové ověření dosud probíhají. Etapa zatím není označena za dokončenou.
+
+### Etapa 7 — dokončeno (17. 11. 2026)
+
+- Mapování požadavků na vlastní karty, povinné potvrzení a verze karty, kontrola typu/jednotky a dostupných strukturovaných parametrů. Null množství normalizuje rezervování na false; známé množství lze vědomě nerezervovat. Nedostatek nikdy nezapíná tento režim automaticky.
+- Interní saveProduct/startProduct umožňují own s aktivním účtem a dílnou. Atomické zahájení používá společnou snapshot cestu a Operation v téže transakci. Materiál, snapshot a potvrzená karta uchovávají původní specifikaci. Při konfliktu revize nebo nedostatku vše rollbackuje.
+- Reservation uchovává identitu, původní ocenění a zbývající složky každé cenové části. Navýšení vytvoří novou část. Částečné uvolnění LIFO vrací původní hodnotu, úplné uvolnění i poslední zbytky. Při výměně karet se nejprve vracejí všechny snižované části, pak čerpají nové, pod společnými stabilními zámky.
+- Cílové rezervace vyžadují row_version a idempotentní klíč. Retry starého startu po změně rezervací je neobnoví. Samostatné uvolnění zachová in_progress a snapshot. Archivovaná karta dovolí uvolnění, nové čerpání vyžaduje obnovu. Příjem/odpis/inventura nadále pracují pouze s volným fondem.
+- Ledger má reserve/release a přesné vazby na výrobek, materiálovou cenovou část i kartu; původní historie se nemění. Diagnostika rekonstruuje oba fondy a porovnává aktivní části. SQL odložený trigger blokuje nesoulad rezervovaného fondu s částmi a runtime granty zakazují přepis původních cenových podkladů.
+- Skladové přehledy volné/rezervované/celkové zásoby, známých hodnot a neoceněné části, cenových částí podle výrobků, pohybů a odkazů. Vlastní detail je pouze pro čtení. Připravené callbackové mapovací/cílové formuláře nemají HTTP endpoint a nejsou běžně připojené. Webové mutace source=own a akce own výrobků odmítají; own dokončení, skutečnost a návrat do planned blokují i interní služby.
+- Aktualizované README a decisions, nová `docs/inventory-model.md`, modely Drizzle a cleanup izolovaných fixture dat. Bez nových závislostí a bez změn původních aplikovaných migrací.
+
+### Skutečně spuštěné kontroly
+
+- Obě nové migrace aplikovány pouze lokálně bez resetu. Lint bez chyb/varování, typecheck a produkční build prošly; `git diff --check` bez problémů.
+- Celá integrační regrese **54/54**, skutečný Auth/PostgreSQL/Storage a omezená runtime role. Nové rezervace **9/9** (8 scénářů + hlavní test), po doplnění přímých databázových pokusů samostatně znovu **9/9**.
+- Ověřeno: číselný příklad 10g/300 → 5g/150 → nákup 5g/200 → navýšení 2g/70 → 7g/220 rezervováno, 8g/280 volných → plné uvolnění 15g/500; částečné LIFO přes nové i původní části; smíšené ks, účetní podíly a malé opakované přesuny; dva výrobky o poslední zásobu; více řádků jedné karty; atomické selhání při přesunu; souběh příjem/odpis/inventura/uvolnění a výměny mezi dvěma výrobky; idempotence a staré verze; null a vypnuté rezervování; strukturovaná ryzost, potvrzení karty, revize vzoru a historický snapshot/checkbox; archivace a vypnutí/obnovení dílny.
+- Bezpečnost: A/B izolace a cizí mapování, nepříslušný materiálový řádek téhož uživatele, přímý složený FK, bezkontextová RLS, inactive/pending_password/stará relace; runtime UPDATE původní ceny Reservation i UPDATE/DELETE historie odmítnuté. Přímá změna balance porušující rezervovaný fond odmítnutá při commitu. Rekonstrukce všech složek souhlasí po scénářích.
+- Celá prohlížečová regrese **10/10**, zachované etapy 2–6 včetně restartu Next. Nové přehledy na 1440 i 375 px, skutečně připravené interními službami v izolovaném subprocessu; bez veřejného seed endpointu. Ověřeny veřejné own mutace (409), source=own při založení (400), read-only detail, A/B přímé GET, vypnutí/zapnutí dílny a zachování rezervace. Obě šířky bez vodorovného přetečení.
+- Screenshot mobilního skladového detailu vizuálně zkontrolován; snímky obou šířek jsou v dočasném adresáři OS, pouze izolovaná testovací data. Následné úpravy upřesnily popisky volného fondu a zablokovaly přímou editační stránku own deníku; lint/typecheck/build poté opět prošly.
+
+### Omezení a další krok
+
+- Lokální ověření, bez push/nasazení/cloudových změn/Heroku a bez resetu uživatelských dat. Fixture účty i jejich rezervace/soubory uklizeny podle vlastních UUID; testovací webové procesy skončily. Lokální Supabase běží.
+- Běžné vlastní výrobní akce se v této etapě neotevírají. Přehled může být prázdný, dokud nevzniknou skutečná data po otevření cyklu; nevytvářet demo data v účtu uživatelky. Integrační příkaz pro rezervace je v README.
+- Vlastní dokončení, skutečná spotřeba, vratky, odpad, vypořádání a bezpečný návrat do planned nejsou implementované. Etapa 8 musí doplnit celý tento cyklus a teprve společně otevřít webové mutace a připravené komponenty. Školní cyklus zůstává funkční.
+- Etapa 7 dokončena. Etapu 8 nezačínat bez nového zadání.
+
+## Etapa 8 — průběžná implementace (17. 11. 2026)
+
+- Výchozí git stav obsahoval necommitnutou etapu 7; zachována a rozšířena, bez resetu či přegenerování. Zadání zachováno v stage-08-prompt.md.
+- Rozhodnutí kumulativní skutečnosti, FIFO odběru/LIFO uvolnění, poměrných kategorií a kompenzačních oprav zapsána před kódem. Lokálně aplikovány 20261117000700_settlements.sql, 20261117000800_settlement_results.sql a 20261117000900_settlement_integrity.sql.
+- Interní dokončení/oprava/návrat fungují s neměnnými cenovými částmi, revizemi a ledgerem, v jediné Operation transakci. Náhled používá tentýž výpočet v rollbackované transakci. Po návratu je skutečnost kumulativní a další dokončení neúčtuje starý odběr podruhé. Doplňování skutečného materiálu nepřepisuje snapshot.
+- Otevřen own cyklus ve webových mutacích a UI po prvním úspěšném integračním ověření. Explicitní zdroj, mapování/rezervace, checkboxy, deník/fotky, skutečnost s náhledem, opravy a historie; školní cyklus zachovaný. Archivace/obnova místo destruktivního mazání, filtr archivovaných a ochrana souborů zachovaná.
+- První regrese 65/65 integračních testů, nový vlastní prohlížečový průchod 2/2 na 1440 a 375 px. Rozšířené vypořádání samostatně 13/13 včetně souběhu a archivace. Závěrečné kontroly po posledních doplněních ještě probíhají; etapa zatím není označena za dokončenou.
+
+### Etapa 8 — dokončeno (17. 11. 2026)
+
+- Zpřístupněn celý vlastní cyklus v běžném UI i autorizovaných mutacích:
+  ruční výrobek nebo vzor, explicitní school/own s dílnou, mapování,
+  dobrovolná rezervace, kroky, deník/fotky, skutečnost, náhled a dokončení.
+  Bez dílny se používá school a přímé own založení je 403.
+- Odběr = ve výrobku + použitelná vratka + vratný odpad + nevratná ztráta.
+  Vlastní skutečnost je povinně známá/potvrzená, včetně explicitních nul.
+  Nový skutečný materiál lze přidat. Ks jsou celé a jejich odpad je 0.
+  Cílová rezervace je oddělená od odhadu plánu; neprovádí se tichý fallback při nedostatku.
+- FIFO cenové podklady rezervací, volný fond pro rozdíl, uvolnění přebytku
+  v původním ocenění. Hrubý odběr všech řádků musí být dostupný před vratkami.
+  Kategorie se rozdělí přesnou aritmetikou s deterministickými zbytky.
+  Náklad zahrnuje výrobek a ztrátu, odpad nikoli; úplnost vychází jen z nákladových kategorií.
+- Neměnné ProductSettlement/SettlementLine, předchozí revize, cenové části,
+  snímky materiálu/karty a Operation výsledky. Oprava vyžaduje důvod/revizi,
+  zachovává původní ceny pro původní množství a zapisuje přesné kompenzační rozdíly.
+  Jiné výrobky, rezervace a nákupy nepřepočítává. Neproveditelná oprava je konflikt.
+- Kumulativní skutečnost při návratu do planned, včetně nenulového odběru.
+  Restart zachová snapshot, kroky, deník a již evidovanou spotřebu.
+  Další dokončení účtuje pouze rozdíl; completed_at opravy nemění.
+- Náhled používá tentýž výpočet a rollback. Potvrzení kontroluje verze fondů
+  a při změně skladu/ocenění vrátí STOCK_CHANGED se zachováním vstupu.
+  Aktualizace podkladů zachová množství a přidá nové řádky k potvrzení.
+  Síťová nejistota ponechá původní klíč a náhled pro bezpečný retry.
+- Archivace/obnova nic nespotřebuje ani neuvolní. Filtr archivovaných,
+  zákaz hard DELETE, zachované soubory a rezervace. Finanční akce vyžadují obnovu.
+  Pracovní materiál s historií nelze odstranit nebo změnit jeho fyzický význam.
+- Nový editovatelný/idempotentní vzor také z ručního own výrobku:
+  množství taken-returned, tedy i odpad/ztráta, bez přenosu ceny, rezervací,
+  fotografií a checkboxů. Pozdější oprava nemění již vytvořený vzor.
+- Rozšířeny Drizzle modely, diagnostika ledger/balance/rezervace/aktuální
+  vypořádání/náklad Product, odložené kontroly souhrnu a revizí a owner-scoped FK.
+  Aktualizované README, decisions a inventory-model. Původní migrace zachované,
+  bez nových knihoven nebo plošných upgradů.
+
+### Skutečně spuštěné závěrečné kontroly
+
+- Lokální migrace 007/008/009 aplikovány bez resetu dat.
+- Lint bez chyb/varování, typecheck a produkční build prošly.
+- Celá integrační regrese **67/67** na skutečném Auth/PostgreSQL/Storage,
+  včetně zachovaných etap 2–7. Vypořádání **13/13** (12 scénářů a hlavní test).
+- Ověřeny oba číselné příklady: 120 Kč s 5,5g/165Kč volně a nulovou rezervací;
+  126 Kč s 5,3g/159Kč při ztrátě 0,2g. Dále FIFO více cenových částí,
+  pod/přes/nad rezervaci, částečná rezervace proti odhadu plánu,
+  bez rezervace/null plán, neznámá a nulová cena, nulový odběr,
+  neoceněný odpad při úplném nulovém nákladu, celé ks a zákaz jejich odpadu.
+- Úplný rollback více řádků/karet a nových materiálů při nedostatku;
+  hrubá dostupnost před vratkou; dvojklik/souběh, ztracený výsledek a payload konflikt;
+  změna skladu od náhledu; dokončení souběžně s nákupem, odpisem a rezervací.
+- Opravy kategorií stejného odběru, zvýšení/snížení a opakované opravy,
+  stará revize/klíč, jiná nákupní cena, ochrana cizí rezervace a odmítnutá oprava.
+  Nulový i nenulový návrat/restart bez dvojí spotřeby a druhého snapshotu.
+  Archivace aktivní rezervaci zachová; nový vzor je idempotentní a další oprava jej nemění.
+- A/B a cizí karta, inactive/pending_password/stará relace a vypnutá dílna,
+  skutečná runtime RLS bez kontextu, odmítnuté přepsání/smazání revizí,
+  shoda rekonstruovaných složek a aktuálního vypořádání. Školní cyklus bez ceny dál prošel.
+- Celá prohlížečová regrese **12/12** v Chrome s produkčním Next.
+  Nový vlastní průchod na 1440 a 375 px: karta a zásoba 10g/300Kč,
+  ruční own výrobek, rezervace, 100% kroků bez auto-done, deník s obrázkem,
+  průběhová fotografie, skutečnost, náhled, dokončení za 120Kč,
+  oprava na 126Kč se stejným completed_at, hotová fotografie, editovatelný nový vzor,
+  own ze vzoru bez rezervace a s potvrzeným nulovým odběrem, nové přihlášení,
+  archivace/obnova s fotografiemi a odmítnutý DELETE.
+- E2E skutečně nechá server dokončit požadavek a zahodí odpověď; retry zachová
+  rozepsané hodnoty a skončí jedinou revizí bez druhého odečtu. Zachované testy
+  dokumentů včetně restartu Next, účtů, hesel, skladu a školního cyklu prošly.
+  Dřívější testy zákazu own byly upraveny na nové autorizované otevření s dílnou;
+  bez dílny je own dál odmítnutý serverem.
+- Obě šířky bez vodorovného přetečení. Vizuálně zkontrolován desktopový náhled
+  a mobilní hotový detail; screenshoty v dočasném adresáři OS obsahují jen fixture data.
+  Git diff --check bez problémů.
+
+### Hranice a další krok
+
+- Lokální implementace a ověření, bez cloudových migrací, push, nasazení,
+  změn Heroku nebo resetu uživatelských dat. Předchozí necommitnutá etapa 7 zachovaná.
+  Testy uklidily jen svá UUID, rezervace, vypořádání a soubory. Testovací weby skončily,
+  lokální Supabase zůstává dostupný.
+- Ruční scénář školního i vlastního cyklu je v README. Oprava může být odmítnutá,
+  pokud nelze zachovat původní podíly/hodnoty a pozdější rezervace; žádný globální
+  historický přepočet. Výrobky se archivují, nikoli destruktivně mažou.
+- Žádný sklad odpadu, převod materiálu mezi kartami, prodejní cena, účetnictví,
+  export, zálohy nebo pilot. Produkční/cloudový provoz nebyl testovaný.
+- Etapa 8 dokončena. Etapu 9 nezačínat bez nového zadání.
+
+## 17. 11. 2026 — Etapa 9: dotažení MVP, export a obnova
+
+### Implementace
+
+- Před změnami založena docs/mvp-acceptance.md s neověřenými body; doplněna
+  důkazy skutečných testů, samostatné zadání stage-09 a návody export/backup.
+  Předchozí necommitnuté etapy 7–8 zachované, žádný reset nebo redesign.
+- Nastavení → Export vlastních dat: JSON celé vlastní domény včetně historie,
+  archivovaných výrobků a všech revizí, doplňková CSV, manifest, přílohy a fotky.
+  SHA-256, přesné decimal/bigint řetězce a null, UTC, čeština, CSV vzorce,
+  bezpečné UUID cesty a rozlišení duplicitních původních názvů.
+- Úzká SQL read výjimka pro vlastní historické skladové záznamy a soubory po
+  vypnutí dílny; běžný sklad/faktury/mutace zůstávají uzavřené. Aktivní účet a
+  skutečná relace, žádný owner argument, private/no-store, žádné tajné hodnoty.
+- DB snapshot končí před sítí. Chybějící/poškozený ready soubor ruší archiv;
+  pending/deleting a oddělené soubory mají complete=false. Limity bez oříznutí,
+  globální DB lease, timeout, sekvenční čtení a release při chybě/odpojení.
+  Bez diskového úložiště dyno, jobů, placených služeb nebo nové závislosti.
+- Soubory nad 32 MiB celkem lze získat samostatně vedle datového ZIP. Tlačítka
+  mají průběh, zrušení, českou chybu s fokusem a pravdivou zprávu neúplnosti.
+- Opraveny zastaralé placeholderové texty Přehledu a Nastavení, které po etapě 8
+  stále slibovaly sklad/vlastní výrobu až v budoucnu. Zbytek navigace, hledání,
+  filtrů, stránkování, dirty/conflict stavů ověřen zachovanými scénáři.
+- Samostatné ops:backup, ops:backup:verify, ops:restore a cílené ops reset/status/
+  resume pro označený obnovený lokální cíl. Záloha app schématu, dat všech
+  vlastníků, grantů/RLS/sekvencí, migrací/role/Auth konfigurace a skutečných
+  Storage bajtů. Kontrolní součty, časové okno, verze, počty, chráněné soubory.
+- Okno bez zápisů/úklidu zahrnuje DB, Auth i Storage. SQL SHARE zámky a dvojí
+  kontrola Storage během ops zálohy. Nedokončená záloha nemá úspěšný manifest.
+- Restore používá původní Auth UUID přes Admin API, nová neznámá hesla a řízený
+  reset bez SMTP. Nekopíruje Auth interní tabulky, password hashes ani sessions.
+  Inactive/disabled a ban zůstávají blokované, staré sessions odmítnuté.
+- Obnova jen do nového izolovaného /private/tmp cíle s markerem, krátkým
+  project ID, porty, vlastními volumes a Docker project/workdir štítky.
+  Naplněný cíl se nepřepisuje. Kontrola shody migrací s checkoutem.
+- Serverová Auth/Storage konfigurace používá Reflect.get pro skutečné runtime
+  čtení. Samotný alias process.env byl v Turbopack stále vložen při buildu;
+  oprava ověřena v sestaveném kódu i přihlášením do obnoveného projektu.
+
+### Skutečně provedené kontroly
+
+- Migrace 010 aplikovaná lokálně bez resetu dat. Lint, typecheck, produkční
+  build a git diff --check prošly. Žádný nový balíček ani změna lockfile.
+- Celá integrační regrese **74/74**, skutečný Auth/PostgreSQL/Storage a runtime
+  role. Exportní sada **7/7**, včetně archivovaného own výrobku, dvou revizí,
+  snapshotu, přesných čísel/null, A/B, vypnuté dílny, poškozeného/chybějícího
+  objektu, pending, přerušení, 10 001 řádků a převzetí expirovaného lease.
+- Souběžný nákup během čtení exportního souboru uspěje na stejném runtime poolu;
+  archiv dál obsahuje původní DB snapshot. Nedrží dlouhé skladové zámky.
+- Závěrečná úplná prohlížečová regrese **14/14** (cca 1,2 min), včetně
+  skutečného restartu Next a souborů, školního a vlastního cyklu na 1440 i 375 px.
+  Ověřen skutečný download tlačítkem, chybějící soubor s českou chybou a fokusem,
+  odpojení a uvolnění lease. Export vizuálně zkontrolován na 375 px, bez přetečení.
+  Testovací selektor chyby rozlišuje Next route announcer.
+- **Skutečná izolovaná obnova 1/1 prošla**, poslední běh cca 51 sekund.
+  Zdroj 55321/55322 a cíl 56321/56322, odlišná project ID a volumes,
+  produkční Next 3104 a Chrome na desktopu i 375 px. Tři syntetické identity,
+  poznámka s obrázkem, PDF, postup, školní done/null cena a vlastní výroba
+  s fakturou, rezervací, dokončením, odpadem a opravou.
+- Obnova ověřila počty všech app tabulek, validní FK, SHA-256 všech tří souborů,
+  původní UUID vlastníků, skutečné přihlášení přes řízený reset a vynucenou
+  změnu, zachování Auth banu/inactive, staré relace, A/B, RLS, ledger a nové
+  operace/sekvence. Obnovená poznámka, obrázek a školní výrobek se vykreslily.
+  Corrupt/missing/INCOMPLETE byly odmítnuté před vytvořením app schématu;
+  naplněný cíl i source jako cíl odmítnuté.
+- Samostatně spuštěné skutečné CLI ops:backup:verify a ops:restore nad
+  syntetickou testovací zálohou také prošly. Vygenerovaná cílová .env.runtime
+  se připojila omezenou rolí; RLS bez kontextu vrací nula dokumentů. Dodatečný
+  projekt zastaven přes ověřený workdir, běžný lokální projekt zachován.
+- Ověřené verze: Node 24.16.0, Supabase CLI 3.2.0, PostgreSQL 17.12,
+  Next 16.4.6, supabase-js 2.119.0. Příkazy a hranice v backup-and-restore.md.
+
+### Hranice a další krok
+
+- Bez cloudového pilotu, nasazení, push, supabase link, nových účtů/služeb,
+  změn Heroku nebo resetu osobních dat. Privátní fixture zálohy jsou mimo Git
+  v dočasných adresářích OS, se syntetickými údaji. Testy uklidily své běžné
+  fixture účty a soubory, izolované projekty byly zastavené.
+- Export není automatický import. Záloha vyžaduje klidové okno a chráněné
+  lokální uložení. Nejvýše 32 MiB příloh v plném ZIP, jinak odděleně; limity
+  dat, času a souběhu jsou výslovné. Paměť skutečné Eco dyno dosud neověřená.
+- **Etapa 9 dokončena a lokálně ověřena, bez otevřeného blokátoru.**
+  Všechny body akceptační mapy v lokálním rozsahu ověřené. Práce zde končí.
+  Další krok je pouze samostatně autorizovaná etapa 10: konkrétní pilotní konfigurace, HTTPS,
+  migrace/runtime RLS, soukromý bucket, Eco/paměť/restart a provozní zálohování.
+  Přehled názvů konfigurace je v README a .env.example, bez hodnot tajemství.

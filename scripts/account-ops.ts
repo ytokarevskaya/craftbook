@@ -1,20 +1,23 @@
 import { randomUUID } from "node:crypto";
 import { createInterface } from "node:readline/promises";
 import { Writable } from "node:stream";
+import { connectEnvironment, assertRecoveryEnvironment } from "./recovery/environment";
 import { localConnections } from "./local-common";
 import { runOperation, OpsError, type OpsKind } from "./ops/service";
 
 async function main() {
   const command=process.argv[2];
-  if (process.argv.length!==3 || !['create','provision','reset','deactivate','resume','status'].includes(command)) throw new Error("INVALID_COMMAND");
+  const recoveryWorkdir=process.argv[3]==='--recovery-workdir'&&process.argv.length===5?process.argv[4]:undefined;
+  if ((!recoveryWorkdir&&process.argv.length!==3) || !['create','provision','reset','deactivate','resume','status'].includes(command)) throw new Error("INVALID_COMMAND");
   if (!process.stdin.isTTY) throw new Error("TTY_REQUIRED");
-  const connections=localConnections();
+  if(recoveryWorkdir) await assertRecoveryEnvironment(recoveryWorkdir,undefined,true);
+  const connections=recoveryWorkdir?await connectEnvironment(recoveryWorkdir):localConnections();
   let muted=false;
   const output=new Writable({write(chunk,encoding,done){if(!muted)process.stdout.write(chunk,encoding);done();}});
   const prompt=createInterface({input:process.stdin,output,terminal:true});
   const ask=async(text:string)=>(await prompt.question(text)).trim();
   try {
-    console.log("Prostředí: lokální Craftbook (Auth 54321, DB 54322). Vzdálené cíle jsou zakázané.");
+    console.log(recoveryWorkdir?"Prostředí: izolovaný obnovený cíl (Auth 56321, DB 56322).":"Prostředí: lokální Craftbook (Auth 54321, DB 54322). Vzdálené cíle jsou zakázané.");
     if(command==='status') {
       const target=await ask("Auth ID (prázdné = posledních 20 operací): ");
       if (target && !/^[0-9a-f-]{36}$/i.test(target)) throw new Error("INVALID_ID");
@@ -53,7 +56,7 @@ async function main() {
       muted=true; const confirmation=await prompt.question(""); muted=false; process.stdout.write("\n");
       if(password!==confirmation) throw new Error("PASSWORD_MISMATCH");
     }
-    const result=await runOperation({pool:connections.migration,admin:connections.admin,authUrl:connections.authUrl,publicKey:connections.publicKey},{kind,key,reference,targetId,email,password});
+    const result=await runOperation({pool:connections.migration,admin:connections.admin,authUrl:connections.authUrl,publicKey:connections.publicKey,recoveryWorkdir},{kind,key,reference,targetId,email,password});
     console.log(`Dokončeno. Auth ID: ${result.targetId}. Operace: ${result.id}.`);
     if(kind==='create'||kind==='reset'||kind==='provision') console.log("Dočasné heslo předejte osobně. Nový účet vyžaduje změnu hesla do 48 hodin; existující úplný účet provisioning nemění.");
   } finally { prompt.close(); await connections.migration.end(); await connections.runtime.end(); }

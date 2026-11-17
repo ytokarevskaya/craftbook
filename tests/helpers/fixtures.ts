@@ -20,7 +20,13 @@ export async function fixtures() {
       const assets=await connections.migration.query<{storage_key:string}>("select storage_key from app.asset where owner_id=$1",[id]);
       if(assets.rows.length){const removed=await connections.admin.storage.from('craftbook-private').remove(assets.rows.map(a=>a.storage_key));if(removed.error)throw new Error('Úklid testovacích souborů selhal.');}
       await connections.migration.query('delete from app.asset_link where purchase_id in (select id from app.purchase where owner_id=$1)',[id]);
-      for(const table of ['inventory_movement','purchase_line','purchase','inventory_operation','inventory_balance','inventory_item'])await connections.migration.query(`delete from app.${table} where owner_id=$1`,[id]);
+      await connections.migration.query('delete from app.inventory_movement where owner_id=$1',[id]);
+      await connections.migration.query('update app.product set current_settlement_id=null where owner_id=$1',[id]);
+      await connections.migration.query('delete from app.settlement_line where owner_id=$1',[id]);
+      await connections.migration.query('delete from app.product_settlement where owner_id=$1',[id]);
+      await connections.migration.query('delete from app.reservation where owner_id=$1',[id]);
+      await connections.migration.query('update app.product_material set inventory_item_id=null where owner_id=$1',[id]);
+      for(const table of ['purchase_line','purchase','inventory_operation','inventory_balance','inventory_item'])await connections.migration.query(`delete from app.${table} where owner_id=$1`,[id]);
       await connections.migration.query('delete from app.product where owner_id=$1',[id]);
       await connections.migration.query('delete from app.procedure where owner_id=$1',[id]);
       await connections.migration.query('delete from app.document where owner_id=$1',[id]);

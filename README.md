@@ -2,7 +2,7 @@
 
 Jedna kniha vládne všem.
 
-Soukromá aplikace pro studenty zlatnictví a vlastní dílnu. Etapa 6 přidává vlastní zásoby, nákupy s fakturami, odpisy, inventuru a skladovou historii. Pracovní postupy, školní výrobky, deník a fotografie z etapy 5 zůstávají zachované. Zachovává dokumenty, WYSIWYG poznámky, soukromé PDF/DOCX/MD a provozní správu účtů. Vlastní skladová výroba čeká na další etapy.
+Soukromá aplikace pro studenty zlatnictví a vlastní dílnu. Po etapě 9 funguje školní i vlastní výrobní cyklus: plány, rezervace, deník a fotografie, skutečná spotřeba, vratky, odpad, materiálový náklad a auditovatelné opravy. Zachované jsou dokumenty, WYSIWYG, soukromé přílohy a provozní správa účtů. Nastavení nabízí export JSON/CSV i souborů; samostatné provozní nástroje mají skutečně ověřenou izolovanou obnovu.
 
 ## První lokální spuštění
 
@@ -115,7 +115,7 @@ Ručně vyzkoušejte změnu jména a vlastní dílny v `/settings`, reload a nov
 - `supabase`: verzovaná lokální konfigurace a SQL migrace rolí, grantů, RLS a modelu.
 - `tests`: skutečné integrační a prohlížečové ověření.
 
-Framework ani ESLint nebyly plošně upgradovány. Technický dluh kompatibilní řady ESLint 9 zůstává evidovaný. Etapa 5 podporuje pouze školní výrobu, i s aktivní vlastní dílnou. Sklad, rezervace, automatické ceny, AI a administrační UI nejsou implementované. Etapa 6 nebyla zahájena.
+Framework ani ESLint nebyly plošně upgradovány. Školní i vlastní cyklus jsou dostupné. Exporty, zálohy a nasazení čekají na další zadání. AI a administrační UI nejsou součástí implementace.
 
 ## Vyzkoušení etapy 5
 
@@ -143,4 +143,147 @@ Ruční kontrolní scénář:
 
 Prázdná cena je neznámá, nula je známé nulové ocenění. Smíšená zásoba ukazuje známou hodnotu jako neúplnou; odpis převádí známou a neznámou část poměrně. Nový příjem staré neznámé ceny nedopočítává. Částky jsou CZK, bez DPH a automatického rozpočítání dopravy. Po zaúčtování je nákup neměnný; opravy množství se evidují inventurou, nikoli úpravou historie. Poznámka a přílohy nákupu jsou v této etapě také pouze pro čtení.
 
-Přesný model a zaokrouhlování jsou v `docs/decisions.md`. Diagnostika přihlášeného vlastníka s dílnou: `GET /api/inventory/reconcile`, očekávané `{"issues":[]}`; nic neopravuje. Rezervační složky jsou skutečně nulové, rezervace ani vlastní výroba nejsou zpřístupněné. Školní výrobky sklad nemění.
+Přesný model a zaokrouhlování jsou v `docs/decisions.md`. Diagnostika přihlášeného vlastníka s dílnou: `GET /api/inventory/reconcile`, očekávané `{"issues":[]}`; nic neopravuje. Etapy 7–8 níže doplňují rezervace a dokončený vlastní cyklus. Školní výrobky sklad nemění.
+
+## Etapa 7 — rezervace a cenové části
+
+Lokálně aplikujte `npm run db:migrate` (nové migrace `20261117000500_reservations.sql` a `20261117000600_reservation_integrity.sql`), poté `npm run dev`. Existující data a env soubory zachovejte.
+
+Ve skladu jsou dostupné přehledy volného, rezervovaného a celkového evidovaného množství, oddělené hodnoty fondů a cenové části podle výrobků. Pohyby rozlišují rezervaci/uvolnění a odkazují na výrobek. Prázdný přehled znamená skutečně žádné rezervace; žádná demonstrační data se nezakládají.
+
+V etapě 7 byly vlastní výrobní služby ověřené pouze interně. Etapa 8 je nyní zpřístupňuje spolu s dokončením, skutečností a opravami, viz postup níže. Služby nadále ověřují účet/dílnu, mapování, souběh a dostupnost.
+
+Izolované lokální ověření:
+
+```sh
+node --conditions=react-server --import tsx --test tests/integration/reservations.test.ts
+npm run test:integration
+npm run build
+npm run test:e2e -- tests/e2e/reservations.spec.ts
+```
+
+Test vytvoří pouze vlastní náhodné účty a data, zavolá interní služby s ověřeným Auth kontextem a vše uklidí. Browser test připravuje rezervaci těmito službami v lokálním subprocessu, bez veřejného testovacího endpointu; přihlašovací údaje předává pouze na stdin, bez argumentů nebo logů.
+
+Kontrolní příklad v testu: 10 g / 300 Kč → rezervace 5 g / 150 Kč → nákup 5 g / 200 Kč → volných 10 g / 350 Kč → navýšení rezervace o 2 g / 70 Kč → rezervováno 7 g / 220 Kč, volných 8 g / 280 Kč → uvolnění vrátí celkem 15 g / 500 Kč. Nový příjem nepřecení staré části. Snížení vrací nejnovější cenové části jako první; plné uvolnění vrací i poslední přesné účetní zbytky.
+
+`GET /api/inventory/reconcile` nyní porovnává všechny složky obou fondů s ledgerem a rezervovaný fond také se zbývajícími cenovými částmi; nic neopravuje. Vypnutí dílny rezervace nesmaže. Archivovaná karta dovoluje uvolnění, ale další čerpání vyžaduje její obnovu. Detailní invarianty a pořadí zámků jsou v `docs/decisions.md`.
+
+Etapa 8 připojila mapovací a rezervační komponenty na autorizované webové mutace současně s úplným dokončením a vypořádáním. Bez dílny zůstává own zakázané na serveru.
+
+## Etapa 8 — dokončení vlastní výroby a opravy
+
+Ve stávajícím lokálním prostředí spusťte `npm run local:start`,
+`npm run db:migrate` a `npm run dev`. Nové migrace jsou
+`20261117000700_settlements.sql`, `20261117000800_settlement_results.sql`
+a `20261117000900_settlement_integrity.sql`. Neresetují data.
+Existující env soubory nepřegenerovávejte.
+
+Ruční příklad **10 g / 300 Kč → odběr 5 g → náklad 120 Kč**:
+
+1. Zapněte vlastní dílnu v Nastavení. V Materiálech založte kovovou kartu,
+   například Ag 925, kulatý drát. Zadejte počáteční zásobu **10 g**,
+   známou celkovou hodnotu **300 Kč** a důvod.
+2. Vytvořte výrobek ručně nebo z postupu. Vyberte **Vlastní materiál ze skladu**,
+   přidejte požadavek **5 g** a uložte návrh. Kroky jsou volitelné.
+3. Na detailu vyberte kartu, potvrďte specifikaci, zaškrtněte
+   **Rezervovat uvedené množství** a zvolte **Zahájit výrobu**.
+   Volných je 5 g / 150 Kč, rezervováno 5 g / 150 Kč.
+4. Volitelně přidejte deník a fotografie. Checkboxy ukládají průběh,
+   ale 100 % výrobek nedokončí.
+5. Zvolte **Dokončit výrobek**. Zadejte **Ve výrobku 4 g**,
+   **Použitelná vratka 0,5 g**, **Vratný odpad 0,5 g** a **Nevratná ztráta 0 g**.
+   Odběr se dopočítá na 5 g. Potvrďte skutečnost i použitelnost vratky
+   ve stejné specifikaci.
+6. **Spočítat náhled vypořádání** ukáže náklad **120,00 Kč**, volných
+   **5,5 g / 165,00 Kč** a rezervováno 0. Odpadová hodnota 15 Kč není v nákladu.
+   Potvrďte dokončení. Změna skladu od náhledu vyžádá přepočítání se zachováním zadání.
+7. **Opravit spotřebu** vyžaduje důvod. Změňte vratku na 0,3 g a ztrátu na 0,2 g
+   při stejném odběru 5 g: náklad je **126,00 Kč**, volných **5,3 g / 159,00 Kč**.
+   Datum dokončení zůstane stejné a vznikne nová revize.
+8. Ručně založený hotový výrobek nabídne **Uložit jako pracovní postup**.
+   Po prvním příkladu se předvyplní vstup 4,5 g (= odběr minus použitelná vratka),
+   po uvedené opravě 4,7 g. Množství i texty lze upravit. Ceny, rezervace,
+   fotografie a checkboxy se nepřenášejí. Uložení lze přeskočit.
+
+Skutečnost je kumulativní od začátku výrobku. **Vrátit do plánovaných** otevře
+stejný formulář: nulové řádky musí být potvrzené, nenulový odběr se vypořádá.
+Restart zachová snapshot i spotřebu; další dokončení odečte pouze rozdíl.
+Nové rezervace jsou pro další dosud neevidovaný odběr.
+
+Vratka jde na tutéž kartu/specifikaci. Odpad opouští zásobu a není v nákladu;
+ztráta do nákladu vstupuje. U ks jsou všechny fyzické hodnoty celé a odpad je 0.
+Další skutečný materiál lze doplnit bez změny původního plánu. Všechna skutečná
+množství musí být známá; chybějící cena neblokuje dokončení a je označená
+jako neúplné ocenění. Rezervování lze vědomě vypnout, neznámý plán začátek neblokuje.
+
+Výrobky se archivují a obnovují. Archivace nic nespotřebuje ani neuvolní;
+rezervace, revize a soubory zůstávají zachované. Seznam má filtr archivovaných.
+Neproveditelná oprava vrátí konflikt množství/podílů/hodnoty a nepřecení jiné výrobky.
+
+Školní kontrola: bez dílny založte, zahajte a dokončete výrobek bez ceny a spotřeby.
+Nevzniká skladový pohyb. S dílnou lze výslovně vybrat také školní zdroj.
+
+```sh
+node --conditions=react-server --import tsx --test tests/integration/settlements.test.ts
+npm run test:integration
+npm run lint
+npm run typecheck
+npm run build
+npm run test:e2e
+```
+
+Podrobný model: [Skladový model](docs/inventory-model.md) a [rozhodnutí](docs/decisions.md).
+Testy používají skutečný lokální Auth/PostgreSQL/Storage a uklízejí jen svá UUID.
+Bez push, cloudu a nasazení. Etapa 9 nebyla zahájena.
+
+### Etapa 9 — vlastní export a obnova
+
+V **Nastavení → Export vlastních dat** lze stáhnout JSON, CSV, manifest a všechny
+vlastní přílohy/fotografie. Plný ZIP má limit příloh 32 MiB; větší objem se
+stahuje jako záznamy a samostatné soubory. Historická vlastní skladová data jsou
+exportovatelná i po vypnutí dílny. [Postup a hranice exportu](docs/export.md).
+
+Provozní záloha je samostatný lokální nástroj, vyžaduje okno bez zápisů a úklidu:
+
+```sh
+npm run ops:backup -- --output /absolutni/chranena/cesta/novy-backup --maintenance-confirmed
+npm run ops:backup:verify -- --backup /absolutni/chranena/cesta/novy-backup
+npm run ops:restore -- --backup /absolutni/chranena/cesta/novy-backup
+```
+
+Restore přijímá jen nový označený izolovaný cíl; nikdy běžný lokální ani cloudový
+projekt. Účty po obnově vyžadují řízený reset, deaktivace zůstává zachovaná.
+[Úplný návod včetně bezpečného retry](docs/backup-and-restore.md).
+
+Závěrečné místní ověření (Docker, Node 24, lokální Supabase a Chrome):
+
+```sh
+npm run db:migrate
+npm run lint
+npm run typecheck
+npm run build
+npm run test:integration
+npm run test:e2e
+npm run test:recovery
+```
+
+Recovery test si založí dva vlastní lokální projekty s odlišnými volumes a porty
+55321/55322 a 56321/56322, ověří skutečný dump, soubory, Auth reset, RLS, ledger
+i obnovený web na 1440 a 375 px a zastaví pouze své projekty. Nespoléhá jen
+na vytvoření souboru zálohy. [Akceptační mapa MVP](docs/mvp-acceptance.md).
+
+Přípravy pro samostatnou etapu 10, bez aktuálního nasazení:
+
+- Zvolit autorizovaný Supabase projekt a jednu stávající Heroku Eco dyno;
+  potvrdit origin, vypnutou veřejnou registraci a režim bez SMTP.
+- Připravit názvy runtime konfigurace: APP_URL, NEXT_PUBLIC_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, DATABASE_URL (omezená craftbook_runtime),
+  STORAGE_SECRET_KEY a případně FILE_IMAGE_BYTES, FILE_DOCUMENT_BYTES,
+  NOTE_CONTENT_BYTES, FILE_DOWNLOAD_TTL, FILE_GRACE_HOURS. Hodnoty se předávají
+  odděleně; [šablona](.env.example) neobsahuje tajemství.
+- Oddělit MIGRATION_DATABASE_URL a SUPABASE_SECRET_KEY pro provozní správu,
+  provést migrace bez resetu a ověřit RLS skutečnou runtime rolí. Lokální ops
+  nástroje zatím vzdálené cíle odmítají; cloudový provozní postup se musí připravit
+  až pro konkrétní autorizované prostředí, ne obcházením lokálních ochran.
+- Ověřit doménu/HTTPS/cookies, soukromý bucket, paměť Eco, limity exportů,
+  restart a zálohování skutečného pilotu před pozváním dalších osob.
