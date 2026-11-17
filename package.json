@@ -16,9 +16,15 @@
     "db:migrate": "node scripts/local-stack.mjs migrate",
     "local:env": "tsx scripts/local-env.ts",
     "local:account": "tsx scripts/local-account.ts",
-    "local:provision": "tsx scripts/local-provision.ts",
+    "local:provision": "tsx scripts/account-ops.ts provision",
     "test:integration": "node --conditions=react-server --import tsx --test tests/integration/*.test.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "ops:create": "tsx scripts/account-ops.ts create",
+    "ops:provision": "tsx scripts/account-ops.ts provision",
+    "ops:reset": "tsx scripts/account-ops.ts reset",
+    "ops:deactivate": "tsx scripts/account-ops.ts deactivate",
+    "ops:resume": "tsx scripts/account-ops.ts resume",
+    "ops:status": "tsx scripts/account-ops.ts status"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

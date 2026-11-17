@@ -31,3 +31,8 @@ Nastavení: jméno, e-mail pouze pro čtení, vlastní dílna (výchozí vypnuto
 Přihlášení a profil jsou skutečné formuláře s popisky, pending stavem, serverovou validací a čitelnou chybou. Po chybě/uložení se fokus přesune na zprávu. Po přihlášení se nezobrazuje označení náhledu bez identity. Uživatelské jméno vychází ze skutečného profilu, prázdné jméno má neutrální „Můj účet“.
 
 Materiály se zobrazují jen při vlastní dílně; přímé URL ověřuje server. Nastavení ukládá jméno a dílnu, e-mail je pouze pro čtení. Změna hesla zůstává neaktivní s vysvětlením etapy 3. Blokovaný nebo neúplný účet má samostatnou obrazovku bez soukromého obsahu a možnost odhlášení. Vizuální tokeny, desktop sidebar a klávesnicový mobilní drawer z etapy 1 jsou zachované.
+
+
+## Etapa 3 — hesla
+
+Povinná změna používá samostatný formulář mimo privátní shell, nové heslo a potvrzení, vysvětlení odhlášení všech zařízení a možnost odhlásit se. Nastavení obsahuje navíc současné heslo. Pole mají autocomplete current-password/new-password, viditelné popisky a chyby s přesunem fokusu po vykreslení. Při odesílání se zabrání opakovanému požadavku. Po změně následuje plná navigace na přihlášení s potvrzením úspěchu. Expirace vysvětluje potřebu provozního resetu. Žádné administrační odkazy ani registrace.

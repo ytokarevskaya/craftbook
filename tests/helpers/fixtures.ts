@@ -18,9 +18,10 @@ export async function fixtures() {
     // Only IDs created during this test run; never delete by email pattern or reset DB.
     for (const id of ids) {
       const { error } = await connections.admin.auth.admin.deleteUser(id);
-      if (error) throw new Error("Úklid vlastní testovací identity selhal.");
+      if (error && error.status!==404) throw new Error("Úklid vlastní testovací identity selhal.");
+      await connections.migration.query("delete from app.account_provision_operation where target_id=$1",[id]);
     }
     await connections.runtime.end(); await connections.migration.end();
   }
-  return { ...connections, create, cleanup };
+  return { ...connections, create, cleanup, track: (id:string) => { ids.push(id); } };
 }

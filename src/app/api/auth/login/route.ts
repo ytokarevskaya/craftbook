@@ -1,5 +1,8 @@
 import { z } from "zod";
 import { createAuthClient } from "@/server/supabase";
+import { passwordAccess } from "@/modules/identity/password-service";
+import { verifyIdentity } from "@/modules/identity/service";
+import { getPool } from "@/server/db";
 import { currentAccount } from "@/server/account";
 import { assertOrigin, readJson, failure, json } from "@/server/http";
 import { AccessError } from "@/modules/identity/errors";
@@ -13,7 +16,7 @@ export async function POST(request: Request) {
     const { error } = await client.auth.signInWithPassword(credentials.data);
     if (error) return json({ message: "Přihlášení se nezdařilo. Zkontrolujte e-mail a heslo a zkuste to znovu." }, 401);
     try { await currentAccount(); }
-    catch (error) { if (error instanceof AccessError && error.code === "ACCOUNT_BLOCKED") return json({ redirect: "/account-blocked" }); throw error; }
+    catch (error) { if (error instanceof AccessError && error.code === "ACCOUNT_BLOCKED") return json({ redirect: (await passwordAccess(getPool(),await verifyIdentity(client)))==="pending"?"/change-password":"/account-blocked" }); throw error; }
     // Fixed internal destination: no open redirects from user-controlled return URLs.
     return json({ redirect: "/" });
   } catch (error) { return failure(error); }

@@ -76,3 +76,35 @@ Etapa 1 končí zde. Další je samostatně zadaná etapa 2 (skutečná identita
 - Původní dluh ESLint 9 ponechán podle zadání. E2E vyžaduje nainstalovaný Chrome a volný port 3100. Pro lokální web používat přesný origin z APP_URL.
 - Vyzkoušení již připraveného prostředí: `npm run local:start`, `npm run db:migrate`, `npm run local:account`, `npm run dev`, otevřít http://localhost:3000/login. Konfigurace je už připravená; `local:env` ji znovu nepřepíše. Bezpečné zastavení: Ctrl+C web a `npm run local:stop` bez mazání volumes.
 - Etapa 2 dokončena bez otevřeného blokátoru. Lokální Supabase po ověření běží; testovací web byl ukončen a testovací identity uklizeny. Etapa 3 nebyla zahájena.
+
+## Etapa 3 — dokončeno (17. 11. 2026)
+
+### Hotovo
+
+- Lokální interaktivní ops CLI pro create/provision/reset/deactivate/status/resume. Skrytá hesla bez argumentů, kontrola cílového účtu a prostředí, odmítnutí vzdálených cílů. Žádný webový ops endpoint, admin UI nebo SMTP.
+- Migrace `20261116000200_account_operations.sql`: AccountProvisionOperation s trvalým stavem/fází, idempotency klíčem, referencí a bezpečným chybovým kódem; UserAccount.operation_id. Nová migrace aplikována lokálně, původní migrace zachována.
+- Založení bez pozvánky: předem rezervované Auth UUID, pending_password, must_change_password, expirace 48 h, dílna false. Opakování nepřepisuje existující profil ani heslo; kolize e-mailu se nepřebírá.
+- Povinná změna hesla v úzkém průchodu bez běžných dat. Běžná změna v Nastavení ověřuje současné heslo. Úspěch ruší relace a vyžaduje nové přihlášení; dlouho otevřená dočasná relace vyžaduje čerstvé přihlášení před mutací. Expirovaný přístup má vysvětlení a odhlášení.
+- Reset blokuje přístup před Auth změnou a obnovuje pouze pending stav. Deaktivace ponechá data, nastaví disabled, zablokuje Auth a změnou na nezachovávané náhodné heslo zruší relace. Reset disabled účet neaktivuje.
+- Zámek cílového účtu, trvalé mezikroky a operation_id chrání před souběhem a zastaralým dokončením. Selhání po zahájení nechává přístup zablokovaný. Ops operace lze obnovit původním klíčem; selhanou vlastní změnu napravuje explicitní provozní reset.
+- Runtime nemá přímé provozní zápisy ani přístup k evidenci operací; úzké funkce vlastní změny kontrolují uživatele, původní relaci a aktuální operaci. Zachované RLS a transakčně lokální kontext.
+- Aktualizované README, .env.example, decisions a UI pravidla; nový `docs/account-operations.md` popisuje příkazy, Dashboard, předání hesla a nápravu. Závislosti a lockfile bez upgradu.
+
+### Skutečně spuštěné kontroly
+
+- `npm run db:migrate`: nová migrace úspěšně aplikována na lokální Supabase bez resetu dat.
+- `npm run lint`, `npm run typecheck`, `NEXT_TELEMETRY_DISABLED=1 npm run build`: prošly.
+- `npm run test:integration`: závěrečný běh 17. 11. prošel **23/23** (včetně dvou hlavních testů). Zachované bezpečnostní scénáře etapy 2; nové pokrývají založení/idempotenci/kolizi e-mailu, pending přístup, obě změny hesla, expiraci, starou relaci, reset, deaktivaci včetně odstranění auth.sessions, selhání v mezikrocích, obnovu, zastaralé operace, souběh a omezení runtime role.
+- Nový test staré relace původně narazil na správnou kontrolu sessions_valid_after: simulace posunula jen relaci, nikoli čas provisioningu. Opravena testovací příprava historických časů; závěrečný běh prošel.
+- `npm run test:e2e`: závěrečný běh 17. 11. **2/2**. Skutečný Chrome a lokální produkční Next: původní průchod etapy 2 plus první heslo, Nastavení, reset a expirace; přímé HTTP pokusy mimo UI, CSRF, cizí ID, fokus chyb, klávesnice a šířky 1440/375 px bez přetečení.
+- Snímky formuláře povinné změny na 375 px a Nastavení na desktopu vizuálně zkontrolovány; snímky obou formulářů v obou šířkách jsou v dočasném adresáři OS, jen s izolovanými testovacími účty.
+- Kontrola finálních klientských souborů: bez privilegovaného Auth klíče a DB přístupů. `git check-ignore` potvrzuje oddělené ignorované env soubory; `git diff --check` prošel.
+- Předchozí opakování kontrol přerušil limit automatického schvalování, nikoli chyba aplikace. Po obnovení dostupnosti byly oba závěrečné běhy skutečně dokončeny.
+
+### Omezení a další krok
+
+- Bez otevřeného funkčního/testovacího blokátoru. Ověření je lokální; cloudový Supabase ani Heroku se neměnily, neproběhl push ani nasazení. CLI záměrně vzdálené cíle odmítá. Reaktivace disabled účtu není součástí etapy.
+- Auth a DB nejsou atomická transakce. Při nejistém výsledku vlastní změny je nutný explicitní ops reset; návod popisuje bezpečný postup. Žádné heslo se pro pozdější obnovu neukládá.
+- Testy uklidily pouze své náhodné identity; ruční účty zůstaly zachované. Lokální Supabase běží, testovací web je ukončený.
+- Vyzkoušení: `npm run local:start`, `npm run db:migrate`, `npm run ops:create`, `npm run dev`; otevřít http://localhost:3000/login a projít povinnou změnou. Existující konfiguraci nepřegenerovávat. Reset: `npm run ops:reset`; deaktivace: `npm run ops:deactivate`.
+- Etapa 3 dokončena. Další krok je až samostatně zadaná etapa 4; dokumenty, sklad ani další moduly nebyly zahájeny.

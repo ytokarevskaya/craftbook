@@ -14,7 +14,7 @@ export function LoginForm() {
      const response = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: data.get("email"), password: data.get("password") }) });
      const result = await response.json();
      if (!response.ok) { setError(result.message); }
-     else { window.location.assign(result.redirect === "/account-blocked" ? "/account-blocked" : "/"); return; }
+     else { window.location.assign(result.redirect === "/change-password" ? "/change-password" : result.redirect === "/account-blocked" ? "/account-blocked" : "/"); return; }
    } catch { setError("Služba nyní není dostupná. Zkuste to prosím znovu."); }
    busy.current = false; setPending(false);
  }} aria-busy={pending}>
