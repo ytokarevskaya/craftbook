@@ -2,7 +2,7 @@
 
 Jedna kniha vládne všem.
 
-Soukromá aplikace pro studenty zlatnictví a vlastní dílnu. Etapa 4 přidává dokumenty, WYSIWYG poznámky s obrázky a soukromé přílohy PDF/DOCX/MD. Účty, hesla a provozní správa z etap 2–3 zůstávají zachované. Postupy, výrobky a materiály čekají na další etapy.
+Soukromá aplikace pro studenty zlatnictví a vlastní dílnu. Etapa 5 přidává pracovní postupy, školní výrobky, pracovní deník a fotografie. Zachovává dokumenty, WYSIWYG poznámky, soukromé PDF/DOCX/MD a provozní správu účtů. Vlastní skladová výroba čeká na další etapy.
 
 ## První lokální spuštění
 
@@ -107,6 +107,7 @@ Ručně vyzkoušejte změnu jména a vlastní dílny v `/settings`, reload a nov
 - `src/app/(private)`: chráněné stránky při zachování původních URL a vizuálního shellu.
 - `src/app/api/auth`, `src/app/api/profile`: samostatně ověřované HTTP operace.
 - `src/modules/identity`: Drizzle model, ověření identity, transakční služba a validace profilu.
+- `src/modules/workshop`: postupy, školní výrobky, snapshoty, pracovní kroky, skutečná spotřeba a deník.
 - `src/modules/documents`, `src/modules/files`: validovaný obsah, CRUD, soubory, Storage adaptér a údržba.
 - `src/server`: server-only konfigurace, pg pool, SSR klient, autorizace a HTTP chyby.
 - `src/proxy.ts`: aktualizace Auth cookies.
@@ -114,4 +115,16 @@ Ručně vyzkoušejte změnu jména a vlastní dílny v `/settings`, reload a nov
 - `supabase`: verzovaná lokální konfigurace a SQL migrace rolí, grantů, RLS a modelu.
 - `tests`: skutečné integrační a prohlížečové ověření.
 
-Framework ani ESLint nebyly plošně upgradovány. Technický dluh kompatibilní řady ESLint 9 zůstává evidovaný. Pracovní postupy, výrobky, sklad, AI a administrační UI nejsou součástí etapy 4. Další etapa nebyla zahájena.
+Framework ani ESLint nebyly plošně upgradovány. Technický dluh kompatibilní řady ESLint 9 zůstává evidovaný. Etapa 5 podporuje pouze školní výrobu, i s aktivní vlastní dílnou. Sklad, rezervace, automatické ceny, AI a administrační UI nejsou implementované. Etapa 6 nebyla zahájena.
+
+## Vyzkoušení etapy 5
+
+Ve stávajícím lokálním prostředí spusťte `npm run local:start`, `npm run db:migrate` a `npm run dev`. Nová migrace `20261117000300_school_work.sql` přidává školní model a rozšiřuje vlastnické vazby příloh; zachovává předchozí data. Existující env soubory nepřegenerovávejte. Storage připravuje dosavadní `npm run local:storage`.
+
+1. V **Pracovní postupy → Nový postup** zadejte název, volitelné kroky a materiály. Množství může zůstat prázdné. Kroky přeuspořádáte tlačítky Nahoru/Dolů. Z detailu zvolte **Založit školní výrobek**.
+2. Návrh upravte a uložte. **Zahájit výrobu** uchová neměnnou kopii plánu. Zaškrtávejte kroky a ověřte reload; ani 100 % výrobek automaticky nedokončí.
+3. Přidejte zápis do deníku s obrázkem a průběhovou fotografii. **Dokončit výrobek** nabídne skutečnou spotřebu a školní cenu; obojí lze nechat neznámé. Dokončit lze také bez všech checkboxů.
+4. Přes **Výrobky → Nový výrobek** vytvořte ruční návrh bez vzoru, třeba jen s názvem. Po dokončení můžete nabídku nového vzoru přeskočit nebo otevřít **Uložit jako pracovní postup**, upravit předvyplněný návrh a uložit jej právě jednou.
+5. U hotového výrobku lze opravit cenu/spotřebu, doplnit další skutečný materiál, deník a hotové fotografie. Datum dokončení a původní plán se tím nemění. Prázdná cena je jiná než nula.
+
+Seznamy podporují hledání a stránkování, výrobky také filtry stavů. Upravený vzor nepřepisuje zahájenou práci; při změně před zahájením je nutné potvrdit aktuální revizi se zachováním vlastního návrhu. Postupy se archivují, výrobky se v této etapě nemažou. Přehled ukazuje skutečné rozpracované výrobky.

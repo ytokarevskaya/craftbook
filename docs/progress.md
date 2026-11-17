@@ -143,3 +143,34 @@ Etapa 1 končí zde. Další je samostatně zadaná etapa 2 (skutečná identita
 - Validace není antivirová ochrana. HEIC, aktivní SVG/HTML, makra, DOCX editor/konverze, OCR a extrakce textu nejsou podporované. Originály fotografií se nahrazují optimalizovanou kopií, dokumentové přílohy zůstávají původní.
 - U právě připraveného prostředí stačí `npm run dev`, http://localhost:3000/documents. Při přechodu z jiného checkoutu postupovat podle návodu a aplikovat migrace + `local:storage`, nepřegenerovávat existující env.
 - Etapa 4 dokončena. Etapa 5 (pracovní postupy/výrobky) nebyla zahájena; čeká na samostatné zadání.
+
+## Etapa 5 — dokončeno (17. 11. 2026)
+
+### Hotovo
+
+- Pracovní postupy: vytvoření/úprava, hledání, stránkování, detail, řazení textových kroků tlačítky, nezávislé materiály s null množstvím, přílohy celého plánu a archivace. Kontrola revision_counter brání tiché ztrátě souběžných změn.
+- Školní výrobek ze vzoru i přímo z ručního návrhu; stačí název, kroky a známá množství nejsou povinné. Server i SQL odmítají source=own. Seznam má hledání, stránkování a filtry planned/in_progress/done. Přehled zobrazuje skutečné rozpracované výrobky.
+- Atomické zahájení a dokončení s klíčem požadavku, kontrolou verze a zámkem. První zahájení ukládá neměnný snapshot včetně chráněných příloh. Změněná revize vzoru vyžaduje vědomé potvrzení se zachováním vlastního návrhu. Návrat do planned a opětovné zahájení zachovají původní kopii a historii.
+- Pracovní checkboxy ukládají explicitní hodnotu; 100 % neznamená done a bez kroků je „Bez kroků“. Pracovní texty a materiály lze podle specifikace měnit během výroby, aniž se změní snapshot. Po dokončení jsou checkboxy historické.
+- Chronologický deník s datem, WYSIWYG a obrázky, úpravou/smazáním vlastního zápisu; fotografie konkrétního výrobku průběh/hotový výrobek. Znovu využit editor, validace, renderer, upload, optimalizace a soukromé čtení etapy 4. Deník a fotky fungují i po dokončení.
+- Skutečná spotřeba oddělená od plánu, možnost dalších skutečných materiálů a pozdější opravy. Školní cena je přesný numeric řetězec v CZK, null je odlišné od nuly. Opravy nemění completed_at.
+- Dobrovolný editovatelný nový vzor z dokončeného ručního výrobku, vytvořený transakčně právě jednou. Známá potvrzená vstupní spotřeba má přednost před původním plánem; nepřenášejí se checkboxy, fotografie, ceny ani deník. Původ výrobku a snapshot zůstávají zachované.
+- Migrace `20261117000300_school_work.sql` aplikována pouze lokálně, bez resetu. Osm doménových tabulek, RLS skutečné omezené runtime role, stejnovlastnické FK a rozšířený AssetLink s právě jedním cílem. Snapshoty a jejich vazby jsou pro runtime neměnné. Drizzle modely odpovídají sloupcům SQL.
+- Aktualizované README, decisions a návod k souborům; zadání v `docs/stage-05-prompt.md`. Žádné nové závislosti nebo plošné upgrady.
+
+### Skutečně spuštěné kontroly
+
+- `npm run db:migrate`: prošlo na lokálním Supabase, existující data zachována.
+- `npm run lint`, `npm run typecheck`, `npm run build`: prošly. `git diff --check`: bez problémů.
+- `npm run test:integration`: **44/44**, skutečný PostgreSQL/Auth/Storage, včetně regrese etap 2–4. Nové testy zahrnují null/0/přesnou cenu, obě cesty vytvoření, snapshot, revize, souběžné zahájení/dokončení a retry, návrat planned, explicitní checkboxy, relogin, deník/fotografie, archivaci, snapshotové reference a úklid, neaktivní účty/staré relace, RLS, souběžné editace a škodlivý obsah.
+- Po doplnění skutečných materiálů a dalších pokusů o propojení cizích objektů byl samostatně zopakován `tests/integration/workshop.test.ts`: **11/11**. Výslovně ověřeno odmítnutí cizí přílohy, fotografie, deníkového obrázku, materiálového řádku a FK na cizí výrobek; cizí snapshot není viditelný. Dodatečný materiál zachovává snapshot i completed_at.
+- `npm run test:e2e`: **6/6**, Chrome proti lokálnímu produkčnímu Next. Zachované čtyři scénáře etap 2–4 včetně skutečného restartu procesu; nové celé školní a ruční cykly na 1440 a 375 px, s obrázkem v deníku, průběhovou/hotovou fotografií, přímým API A/B, odmítnutím own, dokončením bez ceny, opravou na 0, novým přihlášením a editovatelným uložením nového vzoru.
+- Screenshoty mobilního formuláře a desktopového/mobilního detailu vizuálně zkontrolovány; testy kontrolují nulové vodorovné přetečení. Snímky v dočasném adresáři OS obsahují pouze fixture data.
+- V prvním integračním běhu opravena nejednoznačná SQL reference occurred_at v řazení deníku; následná regrese prošla. V E2E upraveno čekání na serverové uložení checkboxu místo předpokladu okamžité lokální změny.
+
+### Omezení a další krok
+
+- Bez otevřeného funkčního/testovacího blokátoru v zadaném rozsahu. Ověření pouze lokální, cloud ani Heroku nebyly měněny; bez push/nasazení. Testovací účty a soubory uklizeny podle UUID, osobní data zachována. Testovací Next procesy skončily, lokální Supabase zůstává dostupný.
+- Podporován pouze school. Vlastní skladová výroba, rezervace, pohyby, vypořádání a automatické oceňování nejsou hotové. Mazání výrobků, globální galerie a historie verzí vzorů se nenabízejí. Platí dosavadní omezení souborů a ochranné lhůty úklidu.
+- Vyzkoušení ve stávajícím prostředí: `npm run dev`, pak `/procedures/new` nebo `/products/new`. Podrobný průchod v README; při jiném checkoutu nejprve lokální stack a migrace. Existující env nepřegenerovávat.
+- Etapa 5 dokončena. Etapu 6 nezačínat bez samostatného zadání.

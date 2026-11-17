@@ -1,5 +1,5 @@
-import { requireAccount } from "@/server/account";
-import { PageHeading } from "@/components/page-heading";
-import { EmptyState } from "@/components/empty-state";
-export const metadata = { title: "Pracovní postupy" };
-export default async function Page() { await requireAccount(); return <><PageHeading title="Pracovní postupy" description="Od prvního nápadu k postupu, ke kterému se můžete vrátit."/><section className="panel section-empty"><EmptyState icon="layers" title="Každý postup začíná prvním krokem" description="Zde budou vaše textové kroky, seznamy materiálů a přílohy."/></section></>; }
+import Link from 'next/link';
+import { requireAccount } from '@/server/account';
+import { PageHeading } from '@/components/page-heading';
+import { WorkList } from '@/components/workshop/list';
+export default async function Page({searchParams}:{searchParams:Promise<{q?:string;page?:string}>}){await requireAccount();const s=await searchParams;return <><PageHeading title="Pracovní postupy" description="Vaše vzory, textové kroky a materiálové požadavky."/><Link className="primary-button" href="/procedures/new">Nový pracovní postup</Link><WorkList kind="procedure" q={s.q} page={Math.max(1,Math.floor(Number(s.page)||1))}/></>;}

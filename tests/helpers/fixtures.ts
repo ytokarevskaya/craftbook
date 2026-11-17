@@ -19,6 +19,8 @@ export async function fixtures() {
     for (const id of ids) {
       const assets=await connections.migration.query<{storage_key:string}>("select storage_key from app.asset where owner_id=$1",[id]);
       if(assets.rows.length){const removed=await connections.admin.storage.from('craftbook-private').remove(assets.rows.map(a=>a.storage_key));if(removed.error)throw new Error('Úklid testovacích souborů selhal.');}
+      await connections.migration.query('delete from app.product where owner_id=$1',[id]);
+      await connections.migration.query('delete from app.procedure where owner_id=$1',[id]);
       await connections.migration.query('delete from app.document where owner_id=$1',[id]);
       await connections.migration.query('delete from app.asset where owner_id=$1',[id]);
       const { error } = await connections.admin.auth.admin.deleteUser(id);

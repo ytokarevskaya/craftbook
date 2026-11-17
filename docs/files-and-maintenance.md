@@ -73,3 +73,9 @@ Objekt se nesmí odstranit před expirací upload oprávnění: jinak by starý 
 Přihlásit se aktivním účtem → Dokumenty → Nová poznámka → název a formátovaný text → Vložit obrázek → počkat na ověření → Uložit → reload → odhlášení/přihlášení → ověřit text a obrázek → Nahrát dokument → PDF → Uložit → Stáhnout soubor → Upravit název → Smazat dokument. Vyzkoušet také 375 px, Tab, chybný PDF a konflikt dvou otevřených editací.
 
 Automaticky: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run test:integration`, `npm run test:e2e`. E2E vyžaduje Chrome a volné porty 3100/3102; druhý port slouží skutečnému restartu Next v testu persistence. Testy vytvářejí vlastní náhodné účty a úklid omezují na jejich UUID. Žádný reset databáze ani cloudové operace.
+
+## Reference od etapy 5
+
+`AssetLink` má právě jeden skutečný cíl: dokument, postup, výrobek, zápis deníku nebo původní kopii plánu výrobku. Složené FK vyžadují stejného vlastníka assetu a cíle. Přílohy celého postupu/plánu nejsou fotografie jednotlivých kroků; produktové fotografie mají role průběh/hotový výrobek, deník používá dosavadní Asset ID v bezpečném obsahu.
+
+První zahájení vytvoří samostatné chráněné snapshotové vazby. Úprava/archivace vzoru, změna pracovního plánu či smazání zápisu je neodstraní. Stávající úklid kontroluje všechny řádky AssetLink bez ohledu na cíl a soubor s libovolnou referencí nesmaže. Runtime nemůže snapshot ani jeho vazby měnit nebo mazat. Ostatní lhůty, upload/finalize/retry a soukromé čtení zůstávají stejné. Prohlížeč neobdrží privilegované klíče ani trvalé veřejné URL.
