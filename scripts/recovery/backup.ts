@@ -9,11 +9,11 @@ import { command, assertRecoveryEnvironment, setRuntimePassword, type Environmen
 const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
 const bucketId='craftbook-private';
 const bucketOptions={public:false,fileSizeLimit:10485760,allowedMimeTypes:['image/jpeg','image/png','image/webp','application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document','text/markdown']};
-export type BackupSource={admin:SupabaseClient;migration:Pool;projectId:string;dump?:()=>Promise<Buffer>};
+export type BackupSource={admin:SupabaseClient;migration:Pool;projectId:string;configuration?:Record<string,unknown>;dump?:()=>Promise<Buffer>};
 type Entry={path:string;bytes:number;sha256:string};
 type ObjectEntry=Entry & {bucket:string;key:string;mime:string};
 type Identity={id:string;email:string;blocked:boolean};
-export type Manifest={format:'craftbook-ops-backup';version:1;complete:boolean;startedAt:string;finishedAt:string;projectId:string;versions:Record<string,string>;entries:Entry[];objects:ObjectEntry[];identities:Identity[];counts:Record<string,string>};
+export type Manifest={format:'craftbook-ops-backup';version:1;complete:boolean;startedAt:string;finishedAt:string;projectId:string;versions:Record<string,string>;entries:Entry[];objects:ObjectEntry[];identities:Identity[];counts:Record<string,string>;configuration?:Record<string,unknown>};
 export async function prepareStorage(admin:SupabaseClient,pool:Pool) {
  const found=await admin.storage.getBucket(bucketId);
  const result=found.data?await admin.storage.updateBucket(bucketId,bucketOptions):await admin.storage.createBucket(bucketId,bucketOptions);
@@ -108,7 +108,7 @@ export async function backup(source:BackupSource,directory:string,maintenanceCon
    schema:entries.filter(e=>e.path.startsWith('migrations/')).at(-1)!.path,
    postgres:(await lock.query('show server_version')).rows[0].server_version,
    cli:(await command(resolve('node_modules/.bin/supabase'),['--version'])).toString().trim()};
-  const manifest:Manifest={format:'craftbook-ops-backup',version:1,complete:true,startedAt,finishedAt:new Date().toISOString(),projectId:source.projectId,versions,entries,objects,identities,counts};
+  const manifest:Manifest={...(source.configuration?{configuration:source.configuration}:{}),format:'craftbook-ops-backup',version:1,complete:true,startedAt,finishedAt:new Date().toISOString(),projectId:source.projectId,versions,entries,objects,identities,counts};
   await writeFile(join(path,'manifest.json'),JSON.stringify(manifest,null,2),{mode:0o600,flag:'wx'});
   await lock.query('COMMIT');return manifest;
  } catch(error) {await lock.query('ROLLBACK');await writeFile(join(path,'INCOMPLETE'), 'Záloha selhala. Neobnovovat.\n',{mode:0o600});throw error;}

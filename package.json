@@ -55,7 +55,8 @@
     "cloud:release": "node --import tsx scripts/cloud/release.ts",
     "test:cloud:recovery": "CRAFTBOOK_TEST_PG_NETWORK_DUMP=1 node --conditions=react-server --import tsx --test tests/recovery/restore.test.ts",
     "cloud:ssl": "node --import tsx scripts/cloud/actions.ts ssl",
-    "cloud:smoke": "node --import tsx scripts/cloud/smoke.ts"
+    "cloud:smoke": "node --import tsx scripts/cloud/smoke.ts",
+    "cloud:files:cleanup": "node --conditions=react-server --import tsx scripts/cloud/files-cleanup.ts"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

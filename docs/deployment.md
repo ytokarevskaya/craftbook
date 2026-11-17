@@ -12,8 +12,11 @@ Autorizované a API ověřené cíle:
 
 App name byl dohledán přes API podle přesné domény a porovnán s ID i vlastníkem,
 neodvozen z domény. Automatic Deploys uživatelka potvrdila jako vypnuté.
-Konkrétní nasazený commit/release a výsledky smoke jsou v progress po dokončení
-nasazení; samotná příprava konfigurace nebo build není hotový pilot.
+Nasazeno **17. 11. 2026**, Heroku **v5**,
+release `c8854ff8-f80b-415d-b7b7-c057b5358108`, commit
+`e41fd0fda7c0a58665c8c1796d8aea0f306403e0`. Omezený cloudový smoke prošel,
+včetně restartu, A/B, souborů, exportu a skladu. Podrobnosti v progress.
+Pozdější provozní/dokumentační commity nejsou automaticky nasazené.
 
 ## Oddělená konfigurace
 
@@ -109,6 +112,16 @@ Heroku identitu a migrační TLS/roli/historii. Lokální ops příkazy dál clo
 odmítají. Heslo pouze skrytým vstupem; disabled se provisioningem/resetem
 neaktivuje. Přerušené operace řešte status/resume, nikoli ručním active zápisem.
 
+Údržba souborů používá stejnou doménovou logiku jako lokální nástroj:
+
+```sh
+npm run cloud:files:cleanup -- --dry-run
+npm run cloud:files:cleanup -- --apply
+```
+
+Výchozí režim nic nemaže, dávka nejvýše 50 objektů. Nejprve zkontrolujte počty;
+apply používejte mimo zálohovací okno. Nemění skladový ledger.
+
 ## Build a nasazení přesného commitu
 
 ```sh
@@ -172,12 +185,19 @@ npm run ops:backup:verify -- --backup /absolutni/chranena/cesta/novy-backup
 npm run cloud:migrate -- --backup /absolutni/chranena/cesta/novy-backup --maintenance-confirmed
 ```
 
+V Heroku Dashboard → Resources dočasně nastavte web quantity=0. Po dokončení
+zálohy obnovte jeden Eco web příkazem `npm run cloud:eco`. Žádné další změny
+Auth/Storage ani cleanup během tohoto okna.
+
 Backup vyžaduje quantity=0 všech procesů cílové aplikace. Zahrnuje app schema,
 všechny vlastníky/historii, RLS/granty/sekvence a skutečné Storage bajty; cloud
 pg_dump běží v jednorázovém lokálním Dockeru přes síť, ověřené TLS a 0600 pgpass.
 Heslo není v argv ani globálním ~/.pgpass. Zdroj je explicitně povolený ref.
 Dočasný pgpass/CA se uklidí. Migrační soubory se ukládají jen pro skutečně
-aplikovanou historii. Nové migrace po existujících datech vyžadují správnou
+aplikovanou historii. Manifest navíc zachycuje netajnou Auth politiku, exposed
+schemas a metadata soukromého bucketu; nikoli API klíče, JWT secrets nebo sessions.
+Při obnově do lokálního cíle je konfigurace referencí pro kontrolu, nepřenastavuje
+cloud ani nenahrazuje izolované bezpečné výchozí nastavení. Nové migrace po existujících datech vyžadují správnou
 ověřenou zálohu do hodiny a stejné klidové okno. Ponechte poslední dobrou kopii.
 
 Restore **jen do izolovaného lokálního cíle** postupem backup-and-restore.md,
@@ -189,13 +209,19 @@ Rollback kódu: uchovejte číslo předchozího kompatibilního releasu. Příka
 `heroku releases:rollback vN --app craftbook-app` je určen jen po kontrole
 kompatibility se současným schématem. Alternativně nasadit archiv známého
 kompatibilního commitu oficiálním API. Rollback releasu nevrací migrace.
-Nedělat destruktivní down/reset. První release ještě nemá předchozí funkční
-produkční verzi; bezpečný návrat je web=0 do opravy, ne automatický restore DB.
+Nedělat destruktivní down/reset. Předchozí **v4**, commit `5fc2d1422d915d1463332b809b417df7492ce18e`,
+má stejný webový kód a stejné schéma jako v5 (v5 opravuje pouze smoke helper).
+Je kompatibilním rollbackem této verze. Při nejistotě web=0 do opravy,
+ne automatický restore DB.
+
+První skutečná záloha a její izolovaná obnova jsou dokončené: viz progress.
+Pozorovaná paměť maximálně 124,15 MB, bez R14/R15, nikoli kapacitní záruka.
 
 Zbývající osobní kontrola: skutečný telefon/fotka, vlastní první přihlášení a
 praktické používání. Technický průchod to nenahrazuje. V1 nezačíná automaticky.
 
 Podklady: [Heroku Node](https://devcenter.heroku.com/articles/nodejs-support),
+[Eco hodiny](https://devcenter.heroku.com/articles/eco-dyno-hours),
 [Node build](https://devcenter.heroku.com/articles/nodejs-classic-buildpack-builds),
 [Heroku API](https://devcenter.heroku.com/articles/platform-api-reference),
 [pg TLS](https://node-postgres.com/features/ssl),

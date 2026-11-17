@@ -62,3 +62,15 @@ Po ověření běží jen původní craftbook-local, izolované projekty jsou za
 - **Neověřeno:** cloudový pilot, skutečná Eco dyno/paměť a vzdálená konfigurace.
   Patří do etapy 10, nebyly provedené ani nejsou blokátorem lokální etapy 9.
 - Žádný push, nasazení, supabase link, Heroku změny ani reset osobních dat.
+
+## Cloudové ověření etapy 10 — 17. 11. 2026
+
+Výše uvedené hranice cloudového ověření popisují stav na konci etapy 9.
+Nyní nasazen v5 / e41fd0f: skutečný HTTPS smoke, vynucená změna hesla, A/B
+včetně souborů, školní null cena, sklad 120 Kč / 5,5 g, export, 1440/375,
+restart/perzistence, refresh/reset/deaktivace prošly. Maximum pozorované paměti
+124,15 MB bez R14/R15; omezená runtime role a obě TLS spojení ověřené.
+Skutečná pilotní záloha i izolovaná obnova 25 tabulek / 3 souborů prošly.
+Přirozené Eco uspání se sleduje bez keep-alive; výsledek v progress.
+Čekající osobní kontrola: vlastní první přihlášení/heslo, fyzický telefon
+a praktické používání. Žádná V1 ani další účty nejsou součástí tohoto ověření.

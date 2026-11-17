@@ -272,25 +272,10 @@ Recovery test si založí dva vlastní lokální projekty s odlišnými volumes 
 i obnovený web na 1440 a 375 px a zastaví pouze své projekty. Nespoléhá jen
 na vytvoření souboru zálohy. [Akceptační mapa MVP](docs/mvp-acceptance.md).
 
-Přípravy pro samostatnou etapu 10, bez aktuálního nasazení:
-
-- Zvolit autorizovaný Supabase projekt a jednu stávající Heroku Eco dyno;
-  potvrdit origin, vypnutou veřejnou registraci a režim bez SMTP.
-- Připravit názvy runtime konfigurace: APP_URL, NEXT_PUBLIC_SUPABASE_URL,
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, DATABASE_URL (omezená craftbook_runtime),
-  STORAGE_SECRET_KEY a případně FILE_IMAGE_BYTES, FILE_DOCUMENT_BYTES,
-  NOTE_CONTENT_BYTES, FILE_DOWNLOAD_TTL, FILE_GRACE_HOURS. Hodnoty se předávají
-  odděleně; [šablona](.env.example) neobsahuje tajemství.
-- Oddělit MIGRATION_DATABASE_URL a SUPABASE_SECRET_KEY pro provozní správu,
-  provést migrace bez resetu a ověřit RLS skutečnou runtime rolí. Lokální ops
-  nástroje zatím vzdálené cíle odmítají; cloudový provozní postup se musí připravit
-  až pro konkrétní autorizované prostředí, ne obcházením lokálních ochran.
-- Ověřit doménu/HTTPS/cookies, soukromý bucket, paměť Eco, limity exportů,
-  restart a zálohování skutečného pilotu před pozváním dalších osob.
-
 ### Etapa 10 — uzavřený cloudový pilot
 
-Cílem je osobní EU Heroku aplikace `craftbook-app` a Supabase
+Pilot běží na [HTTPS adrese](https://craftbook-app-cab5aab2013a.herokuapp.com).
+Nasazený commit `e41fd0f`, Heroku release **v5**. Cílem je osobní EU Heroku aplikace `craftbook-app` a Supabase
 `vayxezlkyognarkqebbg`. Cloudové nástroje mají výslovné příkazy `cloud:*`,
 oddělenou ignorovanou `.env.ops.cloud.local`, ověřované TLS/CA, omezenou
 runtime roli a kontrolu přesných cílů. Lokální konfigurace zůstává lokální.

@@ -83,3 +83,9 @@ První zahájení vytvoří samostatné chráněné snapshotové vazby. Úprava/
 ## Faktury od etapy 6
 
 Purchase má skutečnou vlastnickou FK z AssetLink (role invoice). Připojit lze pouze vlastní ověřený ready soubor. Při přípravě faktury nebo prvním připojení k nákupu se asset trvale označí workshop_only: bez vlastní dílny jej nelze číst ani finalizovat přes obecné endpointy. Příznak nelze runtime snížit; i soubor použitý zároveň jako dokument podléhá přísnějšímu omezení faktury. Ostatní dokumenty zůstávají dostupné. Úklid zachovává všechny reference včetně nákupních; nepřipojené uploady používají dosavadní ochranné lhůty.
+
+## Cloudová údržba etapy 10
+
+Pro autorizovaný pilot použijte `npm run cloud:files:cleanup -- --dry-run`,
+po kontrole `--apply`. Výslovná kontrola cloudového cíle, stejná cleanup logika,
+nejvýše 50 objektů. Během zálohovacího okna úklid nespouštějte.

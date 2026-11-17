@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { cloudTarget } from '../../src/lib/cloud-target';
 import { api,verifyTargets } from './api';
 import { readCloudEnv,required,cloudConnections } from './config';
@@ -44,7 +45,7 @@ export async function cloudBackup(path:string,maintenanceConfirmed:boolean) {
  const c=cloudConnections();try {
   const target=await verifyTargets(c.env),formation=await api('heroku',`/apps/${target.appId}/formation`);
   if(!maintenanceConfirmed||formation.some((p:{quantity:number})=>p.quantity>0))throw new Error('BACKUP_REQUIRES_STOPPED_WEB_AND_MAINTENANCE');
-  const manifest=await backup({admin:c.admin,migration:c.migration,projectId:cloudTarget.projectRef,
+  const manifest=await backup({admin:c.admin,migration:c.migration,projectId:cloudTarget.projectRef,configuration:await cloudPolicySnapshot(c.admin),
    dump:()=>dumpDatabase(required(c.env,'MIGRATION_DATABASE_URL'),true,c.env.DATABASE_CA_CERT)},path,true);
   await verifyBackup(path);console.log('Pilotní záloha a kontrolní součty ověřeny. Verze schématu:',manifest.versions.schema);
  } finally {await c.migration.end();await c.runtime?.end();}
@@ -65,4 +66,18 @@ export async function enforceSsl() {
   if(!status.currentConfig?.database)await api('supabase',`/v1/projects/${cloudTarget.projectRef}/ssl-enforcement`,'PUT',{requestedConfig:{database:true}});
   console.log('SSL enforcement požadováno pro jediný ověřený projekt. Může následovat krátký restart DB; před migrací se znovu ověří TLS.');
  }finally{await c.migration.end();await c.runtime?.end();}
+}
+
+export async function cloudPolicySnapshot(admin:SupabaseClient) {
+ const raw=await api('supabase',`/v1/projects/${cloudTarget.projectRef}/config/auth`);
+ const names=['site_url','uri_allow_list','disable_signup','password_min_length','password_required_characters','jwt_exp','refresh_token_rotation_enabled','security_refresh_token_reuse_interval','security_update_password_require_reauthentication'];
+ const auth=Object.fromEntries(names.filter(k=>raw[k]!==undefined).map(k=>[k,raw[k]]));
+ for(const key of Object.keys(raw))if(/^external_.+_enabled$/.test(key))auth[key]=raw[key];
+ const rest=await api('supabase',`/v1/projects/${cloudTarget.projectRef}/postgrest`);
+ if(String(rest.db_schema).split(',').map(s=>s.trim()).includes('app'))throw new Error('APP_SCHEMA_EXPOSED');
+ const bucket=await admin.storage.getBucket('craftbook-private');
+ if(bucket.error||!bucket.data||bucket.data.public)throw new Error('PRIVATE_BUCKET_NOT_CONFIRMED');
+ return {projectRef:cloudTarget.projectRef,appOrigin:cloudTarget.origin,auth,exposedSchemas:String(rest.db_schema),
+  identityRecovery:'Původní Auth UUID přes Admin API; žádná hesla/relace/signing keys. Řízený reset.',
+  storage:{bucket:bucket.data.id,public:bucket.data.public,fileSizeLimit:bucket.data.file_size_limit,allowedMimeTypes:bucket.data.allowed_mime_types}};
 }

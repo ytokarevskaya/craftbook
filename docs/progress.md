@@ -423,7 +423,7 @@ Etapa 1 končí zde. Další je samostatně zadaná etapa 2 (skutečná identita
   migrace/runtime RLS, soukromý bucket, Eco/paměť/restart a provozní zálohování.
   Přehled názvů konfigurace je v README a .env.example, bez hodnot tajemství.
 
-## 17. 11. 2026 — Etapa 10: příprava a nasazení pilotu (probíhá)
+## 17. 11. 2026 — Etapa 10: nasazený uzavřený pilot — technické ověření
 
 - Výchozí čistý commit 9e08d88 obsahuje etapy 7–9 a doloženou lokální obnovu.
   Lokální soubory/DB se nepřepnuly do cloudu. Žádná osobní data se neimportují.
@@ -447,5 +447,37 @@ Etapa 1 končí zde. Další je samostatně zadaná etapa 2 (skutečná identita
   Kontrola souborů ke commitu nezjistila cloudová tajemství ani osobní e-mail.
 - Security advisors: pouze záměrné INFO pro ops tabulky bez RLS politik a WARN
   leaked-password protection; žádná placená funkce nebyla zapnutá.
-- Nasazovací commit/release, cloudový smoke, paměť/restart a pilotní záloha
-  se doplní po skutečném provedení. Pilot není označen za dokončený jen buildem.
+- Živá verze: Heroku **v5**, release c8854ff8-f80b-415d-b7b7-c057b5358108,
+  commit **e41fd0fda7c0a58665c8c1796d8aea0f306403e0**, build
+  ae610943-a140-41a3-8c90-dd721041d79e. Archiv přesného commitu, push na main.
+  Pozdější doplnění provozních nástrojů/dokumentace nemění tento nasazený SHA.
+- Cloudový smoke skutečně prošel přes HTTPS: povinná změna hesla, secure cookie,
+  zákaz registrace, refresh, odmítnutí staré relace po resetu a deaktivace;
+  obrázek/PDF, A/B soubory i dokumenty, postup a školní done s null cenou,
+  vlastní nákup/rezervace/dokončení **120 Kč, 5,5 g / 165 Kč volných, rezervace 0**,
+  úplný ZIP export a prohlížeč 1440/375 bez přetečení. Restart skutečné dyno
+  zachoval DB i soubory. Dva schválené syntetické účty jsou deaktivované;
+  jejich oddělený ledger zůstává. Osobní účet zůstal pending_password.
+- Jeden Eco web, bez add-onů a workerů. Pozorované maximum paměti **124,15 MB**
+  (61 vzorků), žádné R14/R15; runtime pool max 5, při klidu 0 DB spojení.
+  Nejde o zátěžový test ani garantované maximum. API kvóty v 15:13 UTC hlásilo
+  1 000 / 1 000 Eco hodin zbývajících; jde o průběžné sdílené vyúčtování, ne
+  rezervaci hodin pro tento web.
+- Skutečná pilotní záloha mimo Git v chráněném adresáři
+  /Users/user/Desktop/Dev/craftbook-backups/pilot-2026-11-17T14-36-35-825Z:
+  25 app tabulek, 3 skutečné soubory, 3 vlastníci, Auth politika bez tajemství,
+  aplikované migrace a SHA-256 manifest. Během zálohy web=0 a žádné další zápisy.
+- **Obnova této skutečné pilotní zálohy prošla** do odděleného lokálního projektu:
+  počty 25 tabulek, SHA-256 všech 3 souborů, UUID, validní FK, omezená runtime
+  role/RLS bez kontextu a blokace 2 disabled + 1 pending_password. Cíl zastaven.
+  Pilot nebyl přepsán; osobní heslo nebylo měněno. Přihlášení/render po obnově
+  navíc pokrývá samostatný syntetický test cloudového dumpu 1/1.
+- Údržba osiřelých souborů má samostatný cloudový dry-run/apply wrapper s kontrolou
+  cíle a sdílenou logikou; lokální ochrany se neobcházejí. Skutečný dry-run:
+  0 kandidátů, 0 smazaných, 0 chyb. Závěrečný lint/typecheck/build i 3/3 cloud
+  ochrany prošly. Kontrola zdrojů a browser bundle: žádná cloudová tajemství
+  ani osobní e-mail.
+- Přirozené uspání Eco a následné probuzení: ověření probíhá bez HTTP keep-alive.
+- Čeká na uživatelku: vlastní první přihlášení a změna hesla (lokální
+  .env.pilot-login.local, expirace 48 h), skutečný telefon/fotka a praktický průchod.
+  To není nahrazeno automatickým testem. Žádní další uživatelé ani V1 se nezakládají.

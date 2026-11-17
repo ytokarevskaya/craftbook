@@ -231,3 +231,12 @@
 - Dva syntetické cloudové účty a ponechání jejich testovacího ledgeru byly
   výslovně schválené uživatelkou. Testy nesmějí sahat na osobní první účet,
   mazat pohyby nebo importovat lokální skutečná data; po testu účty deaktivovat.
+
+### Dokončení technického pilotu
+
+- Živý release v5/e41fd0f; další ops/dokumentace nejsou implicitně webový deploy.
+- Cloudový backup zachycuje whitelist netajné Auth politiky a exposed schemas
+  jako referenci; žádné klíče/hesla/session. Skutečný pilotní dump byl obnoven
+  pouze izolovaně. Cloudový cleanup je tenký wrapper stejné doménové logiky.
+- Dva schválené syntetické účty jsou deaktivované, ledger zachován. Osobní
+  pending účet a jeho heslo se automatickým průchodem nemění.

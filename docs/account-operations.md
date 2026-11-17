@@ -1,6 +1,6 @@
 # Provozní správa účtů — etapa 3
 
-Nástroje se spouštějí lokálně v terminálu s Node 24, běžícím lokálním Supabase a konfigurací vytvořenou pomocí `npm run local:env`. Web používá `.env.local`, provozní nástroje oddělený ignorovaný `.env.ops.local`. Před připojením odmítnou vzdálené adresy; v této etapě nepodporují cloudový přepínač. Nepřepisujte ochrany pro použití v produkci. Cloud ani Heroku nebyly změněny.
+Nástroje se spouštějí lokálně v terminálu s Node 24, běžícím lokálním Supabase a konfigurací vytvořenou pomocí `npm run local:env`. Web používá `.env.local`, provozní nástroje oddělený ignorovaný `.env.ops.local`. Před připojením odmítnou vzdálené adresy; v lokálním režimu nepodporují cloudové adresy. Nepřepisujte ochrany pro použití v produkci. V etapě 3 cloud ani Heroku nebyly změněny; cloudový režim etapy 10 je popsán na konci dokumentu.
 
 ## Založení a první přihlášení
 
@@ -29,7 +29,7 @@ npm run ops:provision
 
 CLI zobrazí ID i e-mail pro kontrolu. Doplní chybějící účet/profil v jedné transakci do omezeného pending stavu. Úplný existující účet ani profil nepřepíše; deaktivovaný účet neaktivuje. Heslo provisioning nemění. `npm run local:provision` je alias stejného příkazu. Neznáte-li heslo, po provisioningu použijte explicitní reset.
 
-Samotná identita v Dashboardu nemá přístup do Craftbooku. Samotný reset hesla v Dashboardu nenahrazuje synchronizaci aplikačního stavu a hranice relací. Tato etapa neautorizuje použití příkazů proti cloudovému projektu; uvedená cesta v Dashboardu je provozní dokumentace, nikoli provedená cloudová změna.
+Samotná identita v Dashboardu nemá přístup do Craftbooku. Samotný reset hesla v Dashboardu nenahrazuje synchronizaci aplikačního stavu a hranice relací. Samotná etapa 3 neautorizovala použití příkazů proti cloudovému projektu; uvedená cesta v Dashboardu je provozní dokumentace, nikoli provedená cloudová změna.
 
 ## Změna, reset a deaktivace
 
@@ -72,3 +72,10 @@ Auth a DB nejsou společná transakce. Mezikroky se evidují trvale; po zahájen
 ## Ověření
 
 `npm run lint`, `npm run typecheck`, `npm run build`, `npm run test:integration`, `npm run test:e2e`. Integrační testy používají skutečný lokální Auth/PostgreSQL a řízené výpadky mezi kroky. E2E vyžaduje Chrome a volný port 3100. Izolované testovací identity se uklízejí; ručně založené účty zůstávají.
+
+## Cloudový pilot — etapa 10
+
+Výslovné `cloud:account:*` příkazy nyní sdílejí tuto logiku a ověřují pouze
+autorizovaný pilot. Používají `.env.ops.cloud.local`; lokální příkazy a jejich
+ochrany zůstávají. [Přesný postup](deployment.md#účty-a-údržba).
+První účet je připravený s povinnou změnou, nikoli aplikační admin.

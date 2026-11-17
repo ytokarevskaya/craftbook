@@ -145,3 +145,13 @@ provede nový nákup bez kolize sekvence. Produkční Next a Chrome ověří obn
 poznámku/soubory/snapshot na 1440 a 375 px. Poškozená, chybějící a INCOMPLETE
 záloha jsou odmítnuté; naplněný a neoznačený/běžný cíl se nepřepisují.
 Test zastaví jen své projekty. Výsledky a verze jsou v progress a akceptační mapě.
+
+## Ověřený cloudový zdroj — etapa 10
+
+Samostatný `cloud:backup` přijímá pouze autorizovaný pilot a ověřené TLS/CA;
+lokální `ops:backup` dál odmítá vzdálené cíle. Postup zastavení webu a příkazy
+jsou v [deployment.md](deployment.md#smoke-zálohy-a-rollback). Manifest má také
+netajný snímek Auth politiky a exposed schemas. Skutečná pilotní záloha
+25 tabulek / 3 soubory / 3 vlastníci byla ověřena a obnovena v izolovaném cíli,
+včetně hashů, FK, runtime RLS a zachování blokací účtů; cíl je zastavený.
+Zdrojový pilot se neobnovoval ani nepřepisoval. Podrobnosti v progress.
