@@ -275,7 +275,8 @@ na vytvoření souboru zálohy. [Akceptační mapa MVP](docs/mvp-acceptance.md).
 ### Etapa 10 — uzavřený cloudový pilot
 
 Pilot běží na [HTTPS adrese](https://craftbook-app-cab5aab2013a.herokuapp.com).
-Nasazený commit `e41fd0f`, Heroku release **v5**. Cílem je osobní EU Heroku aplikace `craftbook-app` a Supabase
+Nasazený commit `e41fd0f`, Heroku release **v5**. Cloudový smoke, restart,
+přirozené uspání/probuzení a izolovaná obnova pilotní zálohy prošly. Cílem je osobní EU Heroku aplikace `craftbook-app` a Supabase
 `vayxezlkyognarkqebbg`. Cloudové nástroje mají výslovné příkazy `cloud:*`,
 oddělenou ignorovanou `.env.ops.cloud.local`, ověřované TLS/CA, omezenou
 runtime roli a kontrolu přesných cílů. Lokální konfigurace zůstává lokální.

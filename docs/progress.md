@@ -423,7 +423,7 @@ Etapa 1 končí zde. Další je samostatně zadaná etapa 2 (skutečná identita
   migrace/runtime RLS, soukromý bucket, Eco/paměť/restart a provozní zálohování.
   Přehled názvů konfigurace je v README a .env.example, bez hodnot tajemství.
 
-## 17. 11. 2026 — Etapa 10: nasazený uzavřený pilot — technické ověření
+## 17. 11. 2026 — Etapa 10: uzavřený pilot nasazený a technicky ověřený
 
 - Výchozí čistý commit 9e08d88 obsahuje etapy 7–9 a doloženou lokální obnovu.
   Lokální soubory/DB se nepřepnuly do cloudu. Žádná osobní data se neimportují.
@@ -477,7 +477,14 @@ Etapa 1 končí zde. Další je samostatně zadaná etapa 2 (skutečná identita
   0 kandidátů, 0 smazaných, 0 chyb. Závěrečný lint/typecheck/build i 3/3 cloud
   ochrany prošly. Kontrola zdrojů a browser bundle: žádná cloudová tajemství
   ani osobní e-mail.
-- Přirozené uspání Eco a následné probuzení: ověření probíhá bez HTTP keep-alive.
+- **Přirozené uspání Eco i probuzení prošly.** Řídicí API zachytilo stav idle
+  15:38:46 UTC; jediný následný GET /api/health vrátil přesné {status:ok},
+  HTTP 200 za **14 435 ms** (15:39:01 UTC). Bez umělého keep-alive a ručního
+  uspání. Okno začalo 14:45:52 UTC; běžný GET / v 15:04:47 posunul nečinnost,
+  proto bylo čekání prodloužené. Kontrola během čekání používala jen řídicí API.
+  Restart a DB/Storage perzistence byly zvlášť ověřené cloudovým smoke.
+- **Technické kroky etapy 10 dokončené; osobní akceptace čeká.** Bez technického
+  blokátoru, žádný další tarif, spolužák, import lokálních dat ani V1.
 - Čeká na uživatelku: vlastní první přihlášení a změna hesla (lokální
   .env.pilot-login.local, expirace 48 h), skutečný telefon/fotka a praktický průchod.
   To není nahrazeno automatickým testem. Žádní další uživatelé ani V1 se nezakládají.

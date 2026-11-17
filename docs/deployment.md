@@ -202,8 +202,10 @@ ověřenou zálohu do hodiny a stejné klidové okno. Ponechte poslední dobrou 
 
 Restore **jen do izolovaného lokálního cíle** postupem backup-and-restore.md,
 nikdy zpět do pilotu přes reset. Síťový dump transport má skutečný izolovaný
-restore test: npm run test:cloud:recovery. Paměť Eco a chování po uspání se
-musí ověřit v reálném cloudu; žádný keep-alive monitor.
+restore test: npm run test:cloud:recovery. Přirozené uspání skutečné Eco bylo zachyceno 17. 11. v 15:38:46 UTC;
+jediný požadavek ji probudil a vrátil zdravé HTTP 200 za 14,4 s. Během čekání
+žádný HTTP keep-alive, jen řídicí API. První načtení po nečinnosti může trvat
+podobně déle; nepřidávejte keep-alive monitor.
 
 Rollback kódu: uchovejte číslo předchozího kompatibilního releasu. Příkaz
 `heroku releases:rollback vN --app craftbook-app` je určen jen po kontrole

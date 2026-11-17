@@ -71,6 +71,7 @@ včetně souborů, školní null cena, sklad 120 Kč / 5,5 g, export, 1440/375,
 restart/perzistence, refresh/reset/deaktivace prošly. Maximum pozorované paměti
 124,15 MB bez R14/R15; omezená runtime role a obě TLS spojení ověřené.
 Skutečná pilotní záloha i izolovaná obnova 25 tabulek / 3 souborů prošly.
-Přirozené Eco uspání se sleduje bez keep-alive; výsledek v progress.
+Přirozené Eco uspání i jednorázové probuzení prošly: HTTP 200 za 14,4 s,
+bez keep-alive; přesné časy v progress.
 Čekající osobní kontrola: vlastní první přihlášení/heslo, fyzický telefon
 a praktické používání. Žádná V1 ani další účty nejsou součástí tohoto ověření.
