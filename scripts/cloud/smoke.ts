@@ -11,7 +11,7 @@ import {runOperation} from '../ops/service';
 import {unpack} from '../../tests/helpers/archive';
 import type {ProductDetail} from '../../src/modules/workshop/service';
 type User={id?:string;email:string;temporaryPassword:string;password:string;createKey:string};
-let phase='target';
+let phase='target',lastRoute='';
 async function main(){
  if(process.argv.length!==3||process.argv[2]!=='--synthetic-accounts-authorized')throw new Error('AUTHORIZATION_FLAG_REQUIRED');
  const c=cloudConnections(),target=await verifyTargets(c.env);
@@ -25,8 +25,9 @@ async function main(){
  const browser=await chromium.launch({channel:'chrome'}),contexts:BrowserContext[]=[];
  const origin=cloudTarget.origin;
  async function request<T>(context:BrowserContext,path:string,method='GET',data?:unknown):Promise<T>{
+  lastRoute=method+' '+path;
   const response=await context.request.fetch(origin+path,{method,headers:{Origin:origin},...(data===undefined?{}:{data})});
-  if(!response.ok())throw new Error('HTTP_'+response.status());return await response.json() as T;
+  if(!response.ok()){let code='FAILED';try{const body=await response.json();if(typeof body.code==='string'&&/^[A-Z0-9_]{1,80}$/.test(body.code))code=body.code;}catch{}throw new Error('HTTP_'+response.status()+'_'+code);}return await response.json() as T;
  }
  async function login(context:BrowserContext,user:User){
   let result=await context.request.post(origin+'/api/auth/login',{headers:{Origin:origin},data:{email:user.email,password:user.password}});
@@ -78,7 +79,7 @@ async function main(){
   let school=await schoolResponse.json() as ProductDetail;
   if(school.product.status==='planned')await request(a,`/api/products/${ids.school}/actions/start`,'POST',{requestKey:ids.startSchool,version:school.product.row_version,expectedProcedureRevision:pattern.revision_counter});
   school=await request<ProductDetail>(a,'/api/products/'+ids.school);
-  if(!school.steps[0].is_completed)await request(a,`/api/products/${ids.school}/actions/step`,'POST',{stepId:school.steps[0].id,completed:true,version:school.product.row_version});
+  if(!school.steps[0].is_completed)await request(a,`/api/products/${ids.school}/actions/step`,'POST',{stepId:school.steps[0].id,completed:true,version:school.steps[0].row_version});
   await request(a,`/api/products/${ids.school}/actions/journal`,'POST',{id:ids.journal,occurredAt:state.date,body:body(ids.imageA)});
   await request(a,`/api/products/${ids.school}/actions/photo`,'POST',{assetId:ids.imageA,role:'progress',present:true});
   school=await request<ProductDetail>(a,'/api/products/'+ids.school);
@@ -109,11 +110,11 @@ async function main(){
   assert.equal((await a.request.get(origin+'/api/assets/'+ids.imageA+'/content')).status(),200);
   phase='refresh-reset-deactivation';
   const sdk=createClient(c.authUrl,c.publicKey,{auth:{persistSession:false,autoRefreshToken:false}});assert(!(await sdk.auth.signInWithPassword({email:users[0].email,password:users[0].password})).error);assert(!(await sdk.auth.refreshSession()).error);await sdk.auth.signOut({scope:'local'});
-  const temporary=randomBytes(24).toString('base64url');await runOperation(ops,{kind:'reset',key:randomUUID(),targetId:users[0].id,reference:'Pilotní ověření resetu staré relace',password:temporary});assert([401,403].includes((await a.request.get(origin+'/api/profile')).status()));
+  const temporary=randomBytes(24).toString('base64url');users[0].temporaryPassword=temporary;await save();await runOperation(ops,{kind:'reset',key:randomUUID(),targetId:users[0].id,reference:'Pilotní ověření resetu staré relace',password:temporary});assert([401,403].includes((await a.request.get(origin+'/api/profile')).status()));
   for(const user of users)await runOperation(ops,{kind:'deactivate',key:randomUUID(),targetId:user.id,reference:'Ukončení autorizovaného syntetického testu'});
   assert([401,403].includes((await b.request.get(origin+'/api/profile')).status()));
   await writeFile('.cloud/smoke-result.json',JSON.stringify({status:'passed',at:new Date().toISOString(),accounts:users.map(u=>u.id),ids,checks:['auth-and-forced-password','secure-cookies','signup-disabled','private-files','school-null-cost','own-120CZK-5.5g','AB-isolation','export-complete','desktop-and-375','restart-persistence','refresh','reset-old-session','deactivation'],retained:'Syntetické záznamy a ledger zachovány; oba účty deaktivované.'},null,2),{mode:0o600});
   console.log('Cloud smoke prošel: skutečný Auth, školní i vlastní cyklus, 120 Kč / 5,5 g, soubory/export, A/B, desktop/375 a restart. Oba syntetické účty deaktivované; ledger se nemazal.');
  }finally{for(const context of contexts)await context.close();await browser.close();await c.migration.end();await c.runtime?.end();}
 }
-void main().catch(()=>{console.error('Cloud smoke nedokončen, fáze:',phase,'— zachovejte soukromý .cloud/smoke-secrets.json pro řízené pokračování; nemazat ledger ani resetovat databázi.');process.exitCode=1;});
+void main().catch(error=>{const code=error instanceof Error&&/^[A-Z0-9_]+$/.test(error.message)?error.message:error instanceof Error?error.name:'UNKNOWN';console.error('Cloud smoke nedokončen, fáze:',phase,'kód:',code,'operace:',lastRoute,'— zachovejte soukromý .cloud/smoke-secrets.json pro řízené pokračování; nemazat ledger ani resetovat databázi.');process.exitCode=1;});
